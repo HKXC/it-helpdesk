@@ -24,3 +24,13 @@ dialog{padding:0;border:1px solid var(--border);background:var(--surface);color:
 .recommended-list strong{display:block;font-size:15px;margin-bottom:4px}.recommended-list small{display:block;color:var(--muted);font-size:13px;line-height:1.7}.ticket-details-heading h1{font-size:24px;margin:14px 0 8px}.access-audit p{font-size:14px}.audit-list p{font-size:14px}
 @media(max-width:1099px){.sidebar{visibility:hidden}.sidebar.is-open{visibility:visible}}
 @media(max-width:760px){.recommended-list small{display:none}}
+/* Keep the focus indicator on the complete field, including its leading icon. */
+.input-with-icon:has(> input:focus),.input-with-icon:has(> select:focus){border-color:var(--primary);outline:2px solid var(--primary);outline-offset:2px}
+.input-with-icon>input:focus-visible,.input-with-icon>select:focus-visible{outline:none}
+.input-with-icon>input{border-radius:0 8px 8px 0}
+.input-with-icon:has(>.icon-button)>input{border-radius:0}
+.input-with-icon input:-webkit-autofill{-webkit-text-fill-color:var(--text);box-shadow:0 0 0 1000px var(--surface) inset;caret-color:var(--text)}
+.auth-feedback{display:flex;align-items:center;gap:8px;color:var(--primary);font-size:14px;line-height:1.7;margin:0 0 17px}
+.access-story-content{padding:32px 0}.access-story h1{font-size:36px;margin:17px 0}.access-benefits{margin-top:32px;gap:22px}.access-main{padding:24px 36px}.access-form{padding:20px 0}.form-emblem{padding:12px;margin-bottom:15px}.access-intro{margin:8px 0 20px}.auth-tabs{margin-bottom:22px}.access-form .field{margin-bottom:18px}.access-form .checkbox-field{margin:15px 0}.access-help{margin-top:14px}.access-footer{padding-top:15px}
+@media(min-width:761px) and (max-height:900px){.access-main{padding:20px 32px}.access-story{padding:30px 40px}.access-story-content{padding:26px 0}.access-story h1{font-size:32px;margin:13px 0}.access-story-content>p{font-size:16px}.access-benefits{margin-top:25px;gap:20px}.access-benefits>div>span{padding:10px}.access-benefits h2{font-size:16px}.access-benefits p{font-size:13px}.access-form{padding:14px 0}.access-form h1{font-size:28px}.form-emblem{padding:10px;margin-bottom:10px}.form-emblem svg{width:24px;height:24px}.access-intro{font-size:14px;margin:7px 0 17px}.auth-tabs{margin-bottom:17px}.auth-tabs button{padding:8px 12px}.access-form .field{margin-bottom:15px;gap:7px}.access-form .checkbox-field{margin:13px 0}.access-submit{padding:11px 16px}.access-help{margin-top:10px;font-size:13px}.access-footer{padding-top:10px}.auth-feedback{margin-bottom:14px}}
+@media(max-width:760px){.access-main{padding:20px 22px}.access-form{padding:30px 0}.access-footer{padding-top:10px}.access-form .notice{padding:11px 13px}.access-intro{font-size:15px}.form-emblem{margin-bottom:15px}}
