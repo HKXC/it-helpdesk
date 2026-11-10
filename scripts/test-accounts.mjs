@@ -1,0 +1,34 @@
+import assert from 'node:assert/strict';
+import {execFileSync} from 'node:child_process';
+import {randomBytes,randomUUID} from 'node:crypto';
+const origin='http://127.0.0.1:5174';
+function request(path,method='GET',body,cookie='',extra={}){
+ const h={'Content-Type':'application/json',Origin:origin,...extra};if(cookie)h.Cookie=cookie;
+ const args=['--max-time','20','-sS','-i','-X',method,'-w','\n%{http_code}'];for(const [k,v]of Object.entries(h))args.push('-H',k+': '+v);if(body!==undefined)args.push('--data-binary','@-');args.push(origin+path);
+ const text=execFileSync(process.platform==='win32'?'curl.exe':'curl',args,{encoding:'utf8',input:body===undefined?undefined:JSON.stringify(body)});const cut=text.lastIndexOf('\n'),status=Number(text.slice(cut+1));const result=text.slice(0,cut),split=result.indexOf('\r\n\r\n');const headers=result.slice(0,split),data=JSON.parse(result.slice(split+4));const setCookie=headers.match(/set-cookie:\s*([^\r\n]+)/i)?.[1]||'';return {status,data,setCookie,cookie:setCookie.split(';')[0]};
+}
+const password=randomBytes(24).toString('base64url'),email='qa-'+randomUUID()+'@example.test';
+const registration={name:'ผู้ทดสอบระบบบัญชี',email,password,confirmPassword:password,remember:true};
+let r=request('/api/auth/register','POST',registration);assert.equal(r.status,201,JSON.stringify(r.data));const cookie=r.cookie,uid=r.data.user.id;
+assert.match(r.setCookie,/HttpOnly/);assert.match(r.setCookie,/SameSite=Lax/);assert.match(r.setCookie,/Max-Age=604800/);assert.equal('password_hash' in r.data.user,false);
+r=request('/api/auth/session','GET',undefined,cookie);assert.equal(r.status,200);assert.equal(r.data.user.id,uid);
+assert.equal(request('/api/auth/session').status,401);assert.equal(request('/api/helpdesk').status,401);
+assert.equal(request('/api/helpdesk','GET',undefined,'',{'oai-authenticated-user-id':uid,'oai-authenticated-user-email':email}).status,401,'platform headers cannot impersonate website accounts');
+assert.equal(request('/api/auth/register','POST',registration).status,409,'duplicate email rejected');
+assert.equal(request('/api/auth/register','POST',{...registration,email:'short-'+email,password:'short',confirmPassword:'short'}).status,400);
+assert.equal(request('/api/auth/login','POST',{email,password:'incorrect password'}).status,401);
+assert.equal(request('/api/auth/login','POST',{email,password},'',{Origin:'https://other.example'}).status,403);
+r=request('/api/auth/login','POST',{email:email.toUpperCase(),password,remember:false});assert.equal(r.status,200);const second=r.cookie;assert.notEqual(second,cookie);assert.doesNotMatch(r.setCookie,/Max-Age/);
+const job={id:1029,title:'คำร้องจากบัญชีเว็บ',category:'อุปกรณ์',status:'เปิดใหม่',priority:'ปกติ',person:'QA',agent:'ยังไม่มอบหมาย',detail:'ทดสอบข้อมูลส่วนตัว',comments:[]};
+r=request('/api/helpdesk','GET',undefined,cookie);assert.equal(r.data.revision,0);assert.deepEqual(r.data.jobs,[]);
+assert.equal(request('/api/helpdesk','PUT',{revision:0,jobs:[job]},cookie).status,200);
+r=request('/api/helpdesk','GET',undefined,second);assert.equal(r.data.jobs[0].title,job.title);assert.equal(r.data.revision,1);
+assert.equal(request('/api/helpdesk','PUT',{revision:0,jobs:[]},second).status,409);
+assert.equal(request('/api/helpdesk','PUT',{revision:1,jobs:[{...job,status:'invalid'}]},second).status,400);
+const otherPass=randomBytes(24).toString('base64url');r=request('/api/auth/register','POST',{name:'อีกบัญชี',email:'other-'+email,password:otherPass,confirmPassword:otherPass});assert.equal(r.status,201);const other=r.cookie;
+assert.deepEqual(request('/api/helpdesk','GET',undefined,other).data.jobs,[],'another account cannot read the first account data');
+assert.equal(request('/api/auth/logout','POST',{},cookie).status,200);assert.equal(request('/api/auth/session','GET',undefined,cookie).status,401,'logout revokes server session');assert.equal(request('/api/auth/session','GET',undefined,second).status,200,'another device remains signed in');
+assert.equal(request('/api/auth/logout','POST',{},second).status,200);assert.equal(request('/api/helpdesk','GET',undefined,second).status,401);
+assert.equal(request('/api/auth/logout','POST',{},other).status,200);
+const unknown='unknown-'+email;let limited=false;for(let i=0;i<13;i++){const result=request('/api/auth/login','POST',{email:unknown,password:'incorrect password'});if(result.status===429){limited=true;break}assert.equal(result.status,401)}assert.equal(limited,true,'login attempts are rate limited');
+console.log('PASS: signup, validation, login, secure cookie attributes, session rotation, logout revocation, account isolation, anti-impersonation, CSRF, persistence, concurrency, and login throttling');

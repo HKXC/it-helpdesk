@@ -1,42 +1,59 @@
-# Flowdesk — IT Help Desk v2
+# Flowdesk — IT Help Desk v3
 
-แอป Help Desk ภาษาไทย บันทึกคำร้องใน D1 แยกตามบัญชี ChatGPT โดยคง Sites access policy แบบส่วนตัว
+IT Help Desk ภาษาไทย พร้อมระบบสมัครสมาชิกและเข้าสู่ระบบด้วยอีเมล/รหัสผ่านของเว็บไซต์
 
-## ใช้งาน
+## Run
 
 npm install
 npm run dev
 
-ใช้ลิงก์เข้าสู่ระบบในแถบแจ้งสถานะเพื่อเข้าสู่บัญชีจำลอง local เท่านั้น ส่วนเว็บที่เผยแพร่ใช้การเข้าสู่ระบบของ Sites
-
-## ฐานข้อมูล local
-
-npm run build
-node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_right_roland_deschain.sql
-
-ใช้คำสั่ง migration เฉพาะเมื่อยังไม่ได้ apply ในฐานข้อมูล local นั้น การเผยแพร่ผ่าน Sites จะ apply migration บน hosted database
-
-## ตรวจสอบ
+## Build and check
 
 node node_modules/typescript/bin/tsc --noEmit
 npm run build
 npm start -- --port 5174
-node scripts/test-helpdesk.mjs
+node scripts/test-accounts.mjs
 
-Integration tests ใช้ Worker local และ user ID สำหรับทดสอบที่สุ่มใหม่ ตรวจ anonymous access, account isolation, persistence, revision conflict, schema validation และ origin check
+## Database
 
-## ฟีเจอร์
+ใช้ D1 binding DB ตาม .openai/hosting.json สร้าง migration ด้วย npm run db:generate
+สำหรับฐานข้อมูล local ใหม่ apply migration ตามลำดับเพียงครั้งเดียว:
 
-- สร้างคำร้อง ระบุแผนก สถานที่ ช่องทางติดต่อ รหัสอุปกรณ์
-- ค้นหา กรองสถานะ/ความสำคัญ เรียงลำดับ มอบหมาย เปลี่ยนสถานะ สนทนา
-- บันทึกวิธีแก้ไข ยืนยันปิดงาน ให้คะแนน เปิดงานซ้ำพร้อมเหตุผล ยกเลิกพร้อมเหตุผล
-- เวลาและประวัติการดำเนินการ (ไม่ใช่ audit log ที่ป้องกันผู้ใช้แก้ไขเอง)
-- คลังความรู้ รายงาน CSV พร้อมป้องกัน formula injection
-- นำเข้าข้อมูล v1 จาก localStorage เมื่อพื้นที่เซิร์ฟเวอร์ยังว่าง โดยไม่ลบสำเนา local เดิม
-- แสดงสถานะการบันทึก ป้องกัน stale write จากหลายแท็บด้วย revision และสำรองข้อมูลที่ยังบันทึกไม่ได้เป็น JSON
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0000_right_roland_deschain.sql
+node --import ./scripts/sites-env.mjs ./node_modules/wrangler/bin/wrangler.js d1 execute DB --local --config dist/server/wrangler.json --persist-to .wrangler/state --file drizzle/0001_moaning_salo.sql
 
-## ขอบเขต
+Sites applies hosted migrations during publication. Local and hosted databases are separate.
 
-พื้นที่ส่วนตัวต่อบัญชี ยังไม่ใช่คิวงานหลายผู้ใช้ของบริษัท ชื่อผู้ดำเนินการ/ผู้รับผิดชอบเป็นชื่อแสดงผล ไม่ใช่การให้สิทธิ์ การตั้งค่าโปรไฟล์ยังเป็น device preference ข้อมูลคำร้องอยู่บนเซิร์ฟเวอร์ จำกัด 500 คำร้องต่อบัญชี 300 ข้อความและ 500 ประวัติต่อคำร้อง
+## Authentication
 
-ยังไม่เชื่อม SSO บริษัท, RBAC พนักงาน/IT/ผู้ดูแล, อีเมล, ไฟล์แนบ และ SLA ตามเวลาทำการ/วันหยุด ต้องกำหนดนโยบายและเชื่อมระบบองค์กรก่อนใช้งานจริง การยืนยันปิดงานปัจจุบันทำโดยเจ้าของพื้นที่ส่วนตัว
+- /api/auth/register: ชื่อ อีเมล รหัสผ่าน 12–128 ตัวอักษร และยืนยันรหัสผ่าน
+- /api/auth/login: ตรวจรหัสผ่านและสร้าง session ใหม่
+- /api/auth/session: ตรวจ session จาก cookie
+- /api/auth/logout: เพิกถอน session ใน D1 และล้าง cookie
+- Passwords: salted scrypt (N=32768,r=8,p=3,maxmem=64MiB)
+- Sessions: random 32-byte tokens; only SHA-256 token digests stored in D1
+- HTTPS cookie: __Host-flowdesk_session, HttpOnly, Secure, SameSite=Lax, Path=/
+- Loopback HTTP preview uses flowdesk_local_session only
+- Lifetime: 8 hours; Remember: 7 days, with persistent cookie
+- Login limits: 12 attempts/email and 100/IP per 15 minutes
+- Same-origin JSON writes and bounded request bodies; no secrets in localStorage
+
+ระบบใช้บัญชีเว็บโดยตรงและไม่ใช้ oai-authenticated-user headers สำหรับอนุญาตเข้าถึงข้อมูล การเข้าสู่ระบบไม่เปลี่ยนสิทธิ์บุคคลอื่น พื้นที่ข้อมูลแยกตาม account ID ชื่อผู้ดำเนินการและผู้รับผิดชอบเป็นชื่อแสดงผล
+
+ข้อมูลเดิมจากบัญชี ChatGPT เก็บไว้ใต้ key เดิมโดยไม่ลบ ไม่เชื่อมกับบัญชีใหม่อัตโนมัติจาก email บัญชีเว็บใหม่ใช้ ID แบบสุ่มแยก namespace และเริ่มพื้นที่ใหม่
+
+## Help Desk
+
+สร้างคำร้องพร้อมแผนก สถานที่ อุปกรณ์ ช่องทางติดต่อ, ค้นหา/กรอง/เรียง, มอบหมายและสนทนา, วิธีแก้ไข, ปิดงานพร้อมคะแนน, เปิดงานซ้ำ/ยกเลิกพร้อมเหตุผล, ประวัติและเวลา, คลังความรู้ และรายงาน CSV ที่ป้องกัน formula injection
+
+Optimistic revision prevents stale writes. Errors preserve current edits for retry or JSON backup. รองรับ 500 คำร้องต่อบัญชี 300 ข้อความและ 500 ประวัติต่อคำร้อง ประวัติไม่ได้เป็น immutable audit log
+
+## Tests
+
+scripts/test-accounts.mjs ใช้บัญชีสังเคราะห์ใน local Worker ตรวจ signup, duplicate email, password validation, login, cookie flags, logout revocation, sessions across devices, account isolation, forged platform headers, CSRF, persistence, revision conflict และ throttling
+
+## Remaining scope
+
+ยังไม่เชื่อม email verification, password recovery, company-domain registration policy, shared company queue, RBAC พนักงาน/IT/Admin, ไฟล์แนบ, email notifications และ SLA ตามเวลาทำการ ชื่อโปรไฟล์เป็น device preference แยกตาม account ID
+
+หน้าเข้าสู่ระบบต้องเปิดให้เข้าถึงได้โดยไม่ผ่าน platform sign-in gate แต่ API ข้อมูลทั้งหมดต้องผ่าน session ของเว็บไซต์
