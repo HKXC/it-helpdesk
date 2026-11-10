@@ -1,7 +1,7 @@
-import {env} from 'cloudflare:workers';
+import {database} from '../../../../lib/database';
 import {z} from 'zod';
 import {randomUUID} from 'node:crypto';
-import {createSession,endSession,getAccount,limited,readBody,response,sameOrigin} from '../../../../lib/account-auth';
+import {createSession,endSession,getAccount,loadAccount,limited,readBody,response,sameOrigin} from '../../../../lib/account-auth';
 import {dummyHash,hashPassword,verifyPassword} from '../../../../lib/passwords';
 export const dynamic='force-dynamic';
 const credentials=z.object({email:z.string().trim().email().max(254).transform(s=>s.toLowerCase()),password:z.string().min(1).max(128),remember:z.boolean().optional()});
@@ -13,7 +13,7 @@ export async function POST(request:Request){
  if(!request.headers.get('content-type')?.startsWith('application/json'))return response({error:'รูปแบบคำขอไม่ถูกต้อง'},415);
  const action=new URL(request.url).pathname.split('/').at(-1);
  try{
- if(!env.DB)return response({error:'ระบบบัญชียังไม่พร้อม กรุณาลองใหม่'},503);
+ const db=database();
  if(action==='logout'){return response({ok:true},200,{'Set-Cookie':await endSession(request)})}
  if(!['login','register'].includes(action||''))return response({error:'ไม่พบหน้าที่ต้องการ'},404);
  let data:unknown;try{data=JSON.parse(raw)}catch{return response({error:'รูปแบบข้อมูลไม่ถูกต้อง'},400)}
@@ -22,12 +22,12 @@ export async function POST(request:Request){
  if(await limited('ip:'+ip,100,900000)||await limited('email:'+input.email,12,900000))return response({error:'มีการลองเข้าสู่ระบบหลายครั้ง กรุณารอ 15 นาทีแล้วลองใหม่'},429,{'Retry-After':'900'});
  if(action==='register'){
  const reg=signup.parse(data);const id='account:'+randomUUID();const encoded=await hashPassword(reg.password);
- const result=await env.DB.prepare('INSERT INTO accounts (id, email, name, password_hash, created_at) VALUES (?, ?, ?, ?, ?) ON CONFLICT(email) DO NOTHING').bind(id,reg.email,reg.name,encoded,Date.now()).run();
- if(!result.meta.changes)return response({error:'ไม่สามารถสมัครด้วยอีเมลนี้ได้ หากมีบัญชีอยู่แล้วกรุณาเข้าสู่ระบบ'},409);
- return response({user:{id,email:reg.email,name:reg.name}},201,{'Set-Cookie':await createSession(request,id,Boolean(reg.remember))});
+ const result=await db.insert('accounts',{id,email:reg.email,name:reg.name,password_hash:encoded,created_at:Date.now(),role:'employee',active:1,version:0,legacy_migrated:1},true);
+ if(!result)return response({error:'ไม่สามารถสมัครด้วยอีเมลนี้ได้ หากมีบัญชีอยู่แล้วกรุณาเข้าสู่ระบบ'},409);
+ return response({user:{id,email:reg.email,name:reg.name,role:'employee',version:0}},201,{'Set-Cookie':await createSession(request,id,Boolean(reg.remember))});
  }
- const row=await env.DB.prepare('SELECT id, email, name, password_hash FROM accounts WHERE email = ?').bind(input.email).first<{id:string;email:string;name:string;password_hash:string}>();
- const valid=await verifyPassword(input.password,row?.password_hash||dummyHash);if(!row||!valid)return response({error:'อีเมลหรือรหัสผ่านไม่ถูกต้อง'},401);
- return response({user:{id:row.id,email:row.email,name:row.name}},200,{'Set-Cookie':await createSession(request,row.id,Boolean(input.remember))});
+ const row=(await db.select('accounts',{email:input.email},['id','email','name','password_hash','active'],1))[0];
+ const valid=await verifyPassword(input.password,String(row?.password_hash||dummyHash));if(!row||!valid||Number(row.active)!==1)return response({error:'อีเมลหรือรหัสผ่านไม่ถูกต้อง'},401);
+ const user=await loadAccount(String(row.id));return response({user},200,{'Set-Cookie':await createSession(request,String(row.id),Boolean(input.remember))});
  }catch{return response({error:'ระบบบัญชีขัดข้องชั่วคราว กรุณาลองใหม่'},503)}
 }

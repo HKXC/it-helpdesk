@@ -10,7 +10,7 @@ export const jobSchema = z.object({
  location:z.string().max(150).optional(),asset:z.string().max(80).optional(),contact:z.string().max(150).optional(),
  createdAt:z.string().datetime().optional(),updatedAt:z.string().datetime().optional(),
  resolution:z.string().max(3000).optional(),rating:z.number().int().min(1).max(5).optional(),
- history:z.array(event).max(500).optional()
+ history:z.array(event).max(500).optional(),requesterId:z.string().optional(),assigneeId:z.string().nullable().optional(),revision:z.number().int().positive().optional()
 });
 export type Job = z.infer<typeof jobSchema>;
 export const snapshotSchema=z.object({revision:z.number().int().min(0),jobs:z.array(jobSchema).max(500)}).superRefine((v,c)=>{if(new Set(v.jobs.map(j=>j.id)).size!==v.jobs.length)c.addIssue({code:'custom',message:'Duplicate ticket ID'})});

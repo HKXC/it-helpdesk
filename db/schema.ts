@@ -8,7 +8,9 @@ export const workspaces=sqliteTable('helpdesk_workspaces',{
 });
 export const accounts=sqliteTable('accounts',{
  id:text('id').primaryKey(),email:text('email').notNull().unique(),
- name:text('name').notNull(),passwordHash:text('password_hash').notNull(),createdAt:integer('created_at').notNull()
+ name:text('name').notNull(),passwordHash:text('password_hash').notNull(),createdAt:integer('created_at').notNull(),
+ role:text('role').notNull().default('employee'),active:integer('active').notNull().default(1),
+ version:integer('version').notNull().default(0),legacyMigrated:integer('legacy_migrated').notNull().default(0)
 });
 export const sessions=sqliteTable('account_sessions',{
  tokenHash:text('token_hash').primaryKey(),accountId:text('account_id').notNull().references(()=>accounts.id),
@@ -16,4 +18,13 @@ export const sessions=sqliteTable('account_sessions',{
 });
 export const authLimits=sqliteTable('auth_rate_limits',{
  key:text('key').primaryKey(),attempts:integer('attempts').notNull(),expiresAt:integer('expires_at').notNull()
+});
+export const tickets=sqliteTable('it_tickets',{
+ id:integer('id').primaryKey({autoIncrement:true}),requesterId:text('requester_id').notNull().references(()=>accounts.id),
+ assigneeId:text('assignee_id').references(()=>accounts.id),body:text('body').notNull(),revision:integer('revision').notNull().default(1),
+ createdAt:integer('created_at').notNull(),updatedAt:integer('updated_at').notNull(),legacyKey:text('legacy_key').unique()
+});
+export const roleAudit=sqliteTable('role_audit',{
+ id:text('id').primaryKey(),actorId:text('actor_id').notNull(),targetId:text('target_id').notNull(),
+ detail:text('detail').notNull(),createdAt:integer('created_at').notNull()
 });
