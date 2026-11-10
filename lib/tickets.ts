@@ -1,6 +1,67 @@
-import {database} from './database';
-import type {Row} from './data-store';
-import {jobSchema,type Job} from './helpdesk';
-import type {Account} from './account-auth';
-export async function ticketView(row:Row,names?:Map<string,string>):Promise<Job>{const body=JSON.parse(String(row.body)) as Job;const assignee=row.assignee_id?(names?{name:names.get(String(row.assignee_id))||'อดีตผู้รับผิดชอบ'}:(await database().select('accounts',{id:row.assignee_id},['name'],1))[0]):null;return {...body,id:Number(row.id),requesterId:String(row.requester_id),assigneeId:row.assignee_id?String(row.assignee_id):null,agent:assignee?String(assignee.name):'ยังไม่มอบหมาย',revision:Number(row.revision)}}
-export async function migrateLegacy(user:Account){const db=database();const account=(await db.select('accounts',{id:user.id},['legacy_migrated'],1))[0];if(Number(account?.legacy_migrated)===1)return;const old=(await db.select('helpdesk_workspaces',{owner_id:user.id},['payload'],1))[0];if(old){const list=JSON.parse(String(old.payload));if(Array.isArray(list)){for(const item of list){const parsed=jobSchema.safeParse(item);if(!parsed.success)continue;const job=parsed.data;const now=Date.now();await db.insert('it_tickets',{requester_id:user.id,assignee_id:null,body:JSON.stringify({...job,person:user.name,history:[...(job.history||[]).slice(-498),{at:new Date(now).toISOString(),actor:user.name,text:('นำเข้าคำร้องเดิม IT-'+job.id+' · ผู้รับผิดชอบเดิม: '+job.agent).slice(0,500)}]}),revision:1,created_at:now,updated_at:now,legacy_key:user.id+':'+job.id},true)}}}await db.patch('accounts',{id:user.id},{legacy_migrated:1})}
+import { database } from './database';
+import type { Row } from './data-store';
+import { jobSchema, type Job } from './helpdesk';
+import type { Account } from './account-auth';
+export async function ticketView(row: Row, names?: Map<string, string>): Promise<Job> {
+  const body = JSON.parse(String(row.body)) as Job;
+  const assignee = row.assignee_id
+    ? names
+      ? { name: names.get(String(row.assignee_id)) || 'อดีตผู้รับผิดชอบ' }
+      : (await database().select('accounts', { id: row.assignee_id }, ['name'], 1))[0]
+    : null;
+  return {
+    ...body,
+    id: Number(row.id),
+    requesterId: String(row.requester_id),
+    assigneeId: row.assignee_id ? String(row.assignee_id) : null,
+    agent: assignee ? String(assignee.name) : 'ยังไม่มอบหมาย',
+    revision: Number(row.revision),
+  };
+}
+export async function migrateLegacy(user: Account) {
+  const db = database();
+  const account = (await db.select('accounts', { id: user.id }, ['legacy_migrated'], 1))[0];
+  if (Number(account?.legacy_migrated) === 1) return;
+  const old = (await db.select('helpdesk_workspaces', { owner_id: user.id }, ['payload'], 1))[0];
+  if (old) {
+    const list = JSON.parse(String(old.payload));
+    if (Array.isArray(list)) {
+      for (const item of list) {
+        const parsed = jobSchema.safeParse(item);
+        if (!parsed.success) continue;
+        const job = parsed.data;
+        const now = Date.now();
+        await db.insert(
+          'it_tickets',
+          {
+            requester_id: user.id,
+            assignee_id: null,
+            body: JSON.stringify({
+              ...job,
+              person: user.name,
+              history: [
+                ...(job.history || []).slice(-498),
+                {
+                  at: new Date(now).toISOString(),
+                  actor: user.name,
+                  text: (
+                    'นำเข้าคำร้องเดิม IT-' +
+                    job.id +
+                    ' · ผู้รับผิดชอบเดิม: ' +
+                    job.agent
+                  ).slice(0, 500),
+                },
+              ],
+            }),
+            revision: 1,
+            created_at: now,
+            updated_at: now,
+            legacy_key: user.id + ':' + job.id,
+          },
+          true,
+        );
+      }
+    }
+  }
+  await db.patch('accounts', { id: user.id }, { legacy_migrated: 1 });
+}

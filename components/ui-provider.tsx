@@ -1,26 +1,234 @@
-"use client";
-import {createContext,useCallback,useContext,useEffect,useRef,useState,type ReactNode} from 'react';
-export type Locale='th'|'en';
-export type Theme='light'|'dark'|'system';
-export type Bilingual=readonly [string,string];
-type AccountPrefs={id:string;locale?:Locale;theme?:Theme};
-type UI={locale:Locale;theme:Theme;dark:boolean;t:(th:string,en:string)=>string;pick:(v:Bilingual)=>string;setLocale:(v:Locale)=>void;setTheme:(v:Theme)=>void;bindAccount:(u:AccountPrefs|null)=>void;finishOnboarding:()=>Promise<boolean>;preferenceError:string;apiError:(message?:string,status?:number)=>string};
-const Context=createContext<UI|null>(null);
-export function UiProvider({children}:{children:ReactNode}){
- const [locale,L]=useState<Locale>('th'),[theme,S]=useState<Theme>('system'),[systemDark,D]=useState(false),[preferenceError,E]=useState('');const account=useRef<string|null>(null);const chosen=useRef<{locale?:Locale;theme?:Theme}>({});
- useEffect(()=>{try{const saved=JSON.parse(localStorage.getItem('flowdesk-ui')||'{}');if(['th','en'].includes(saved.locale))L(saved.locale);if(['light','dark','system'].includes(saved.theme))S(saved.theme)}catch{}const q=matchMedia('(prefers-color-scheme: dark)');D(q.matches);const changed=()=>D(q.matches);q.addEventListener('change',changed);return()=>q.removeEventListener('change',changed)},[]);
- const dark=theme==='dark'||(theme==='system'&&systemDark);
- useEffect(()=>{document.documentElement.dataset.theme=dark?'dark':'light';document.documentElement.style.colorScheme=dark?'dark':'light';document.documentElement.lang=locale;try{localStorage.setItem('flowdesk-ui',JSON.stringify({locale,theme}))}catch{}},[locale,theme,dark]);
- const t=useCallback((th:string,en:string)=>locale==='th'?th:en,[locale]);const pick=useCallback((v:Bilingual)=>locale==='th'?v[0]:v[1],[locale]);
- async function persist(p:Record<string,unknown>){if(!account.current)return true;try{const r=await fetch('/api/account/preferences',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(p),signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error();E('');return true}catch{E(t('บันทึกการตั้งค่าบัญชีไม่ได้ การตั้งค่าบนอุปกรณ์นี้ยังใช้งานได้','Account preferences could not be saved. Your device preferences still apply.'));return false}}
- const bindAccount=useCallback((user:AccountPrefs|null)=>{account.current=user?.id||null;if(user){L(chosen.current.locale||user.locale||'th');S(chosen.current.theme||user.theme||'system');if(Object.keys(chosen.current).length){void fetch('/api/account/preferences',{method:'PATCH',headers:{'Content-Type':'application/json'},body:JSON.stringify(chosen.current),signal:AbortSignal.timeout(15000)}).catch(()=>{});chosen.current={}}}E('')},[]);
- function setLocale(next:Locale){L(next);if(!account.current)chosen.current.locale=next;void persist({locale:next})}function setTheme(next:Theme){S(next);if(!account.current)chosen.current.theme=next;void persist({theme:next})}
- function apiError(message='',status?:number){if(status===401)return t('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง','Your session expired. Please sign in again.');if(status===403)return t(message||'คุณไม่มีสิทธิ์ทำรายการนี้','Your role does not allow this action.');if(status===409)return t(message||'ข้อมูลเปลี่ยนแล้ว กรุณาโหลดใหม่','This record has changed. Refresh before trying again.');if(status===429)return t('มีการลองเข้าสู่ระบบหลายครั้ง กรุณารอ 15 นาที','Too many attempts. Please wait 15 minutes before trying again.');if(locale==='th')return message||'ดำเนินการไม่สำเร็จ กรุณาลองใหม่';const known:Record<string,string>={'อีเมลหรือรหัสผ่านไม่ถูกต้อง':'The email or password is incorrect.','รหัสผ่านเดิมไม่ถูกต้อง':'Your current password is incorrect.','รหัสผ่านทั้งสองช่องไม่ตรงกัน':'The passwords do not match.','เชื่อมต่อไม่ได้ กรุณาลองใหม่':'Unable to connect. Please try again.','ไม่สามารถสมัครด้วยอีเมลนี้ได้ หากมีบัญชีอยู่แล้วกรุณาเข้าสู่ระบบ':'This email cannot be registered. If you already have an account, sign in.','กรอกชื่อ อีเมล และรหัสผ่านอย่างน้อย 12 ตัวอักษร พร้อมยืนยันรหัสผ่านให้ตรงกัน':'Enter your name, a valid email and a password of at least 12 characters. Passwords must match.','กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง':'Enter a valid email address and your password.','การตั้งค่าไม่ถูกต้อง':'The selected preferences are not valid.','กรุณาใช้รหัสผ่านใหม่ที่ต่างจากรหัสผ่านเดิม':'Choose a password different from your current password.','รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัวอักษรและตรงกันทั้งสองช่อง':'Use at least 12 characters and enter the same new password in both fields.'};return known[message]||(!/[\u0E00-\u0E7F]/.test(message)&&message?message:'The request could not be completed. Please refresh and try again.')}
- return <Context.Provider value={{locale,theme,dark,t,pick,setLocale,setTheme,bindAccount,finishOnboarding:()=>persist({onboardingCompleted:true}),preferenceError,apiError}}>{children}</Context.Provider>
+'use client';
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react';
+export type Locale = 'th' | 'en';
+export type Theme = 'light' | 'dark' | 'system';
+export type Bilingual = readonly [string, string];
+type AccountPrefs = { id: string; locale?: Locale; theme?: Theme };
+type UI = {
+  locale: Locale;
+  theme: Theme;
+  dark: boolean;
+  t: (th: string, en: string) => string;
+  pick: (v: Bilingual) => string;
+  setLocale: (v: Locale) => void;
+  setTheme: (v: Theme) => void;
+  bindAccount: (u: AccountPrefs | null) => void;
+  finishOnboarding: () => Promise<boolean>;
+  preferenceError: string;
+  apiError: (message?: string, status?: number) => string;
+};
+const Context = createContext<UI | null>(null);
+export function UiProvider({ children }: { children: ReactNode }) {
+  const [locale, L] = useState<Locale>('th'),
+    [theme, S] = useState<Theme>('system'),
+    [systemDark, D] = useState(false),
+    [preferenceError, E] = useState('');
+  const account = useRef<string | null>(null);
+  const chosen = useRef<{ locale?: Locale; theme?: Theme }>({});
+  useEffect(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('flowdesk-ui') || '{}');
+      if (['th', 'en'].includes(saved.locale)) L(saved.locale);
+      if (['light', 'dark', 'system'].includes(saved.theme)) S(saved.theme);
+    } catch {}
+    const q = matchMedia('(prefers-color-scheme: dark)');
+    D(q.matches);
+    const changed = () => D(q.matches);
+    q.addEventListener('change', changed);
+    return () => q.removeEventListener('change', changed);
+  }, []);
+  const dark = theme === 'dark' || (theme === 'system' && systemDark);
+  useEffect(() => {
+    document.documentElement.dataset.theme = dark ? 'dark' : 'light';
+    document.documentElement.style.colorScheme = dark ? 'dark' : 'light';
+    document.documentElement.lang = locale;
+    try {
+      localStorage.setItem('flowdesk-ui', JSON.stringify({ locale, theme }));
+    } catch {}
+  }, [locale, theme, dark]);
+  const t = useCallback((th: string, en: string) => (locale === 'th' ? th : en), [locale]);
+  const pick = useCallback((v: Bilingual) => (locale === 'th' ? v[0] : v[1]), [locale]);
+  async function persist(p: Record<string, unknown>) {
+    if (!account.current) return true;
+    try {
+      const r = await fetch('/api/account/preferences', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(p),
+        signal: AbortSignal.timeout(15000),
+      });
+      if (!r.ok) throw Error();
+      E('');
+      return true;
+    } catch {
+      E(
+        t(
+          'บันทึกการตั้งค่าบัญชีไม่ได้ การตั้งค่าบนอุปกรณ์นี้ยังใช้งานได้',
+          'Account preferences could not be saved. Your device preferences still apply.',
+        ),
+      );
+      return false;
+    }
+  }
+  const bindAccount = useCallback((user: AccountPrefs | null) => {
+    account.current = user?.id || null;
+    if (user) {
+      L(chosen.current.locale || user.locale || 'th');
+      S(chosen.current.theme || user.theme || 'system');
+      if (Object.keys(chosen.current).length) {
+        void fetch('/api/account/preferences', {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(chosen.current),
+          signal: AbortSignal.timeout(15000),
+        }).catch(() => {});
+        chosen.current = {};
+      }
+    }
+    E('');
+  }, []);
+  function setLocale(next: Locale) {
+    L(next);
+    if (!account.current) chosen.current.locale = next;
+    void persist({ locale: next });
+  }
+  function setTheme(next: Theme) {
+    S(next);
+    if (!account.current) chosen.current.theme = next;
+    void persist({ theme: next });
+  }
+  function apiError(message = '', status?: number) {
+    if (status === 401)
+      return t(
+        'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง',
+        'Your session expired. Please sign in again.',
+      );
+    if (status === 403)
+      return t(message || 'คุณไม่มีสิทธิ์ทำรายการนี้', 'Your role does not allow this action.');
+    if (status === 409)
+      return t(
+        message || 'ข้อมูลเปลี่ยนแล้ว กรุณาโหลดใหม่',
+        'This record has changed. Refresh before trying again.',
+      );
+    if (status === 429)
+      return t(
+        'มีการลองเข้าสู่ระบบหลายครั้ง กรุณารอ 15 นาที',
+        'Too many attempts. Please wait 15 minutes before trying again.',
+      );
+    if (locale === 'th') return message || 'ดำเนินการไม่สำเร็จ กรุณาลองใหม่';
+    const known: Record<string, string> = {
+      อีเมลหรือรหัสผ่านไม่ถูกต้อง: 'The email or password is incorrect.',
+      รหัสผ่านเดิมไม่ถูกต้อง: 'Your current password is incorrect.',
+      รหัสผ่านทั้งสองช่องไม่ตรงกัน: 'The passwords do not match.',
+      'เชื่อมต่อไม่ได้ กรุณาลองใหม่': 'Unable to connect. Please try again.',
+      'ไม่สามารถสมัครด้วยอีเมลนี้ได้ หากมีบัญชีอยู่แล้วกรุณาเข้าสู่ระบบ':
+        'This email cannot be registered. If you already have an account, sign in.',
+      'กรอกชื่อ อีเมล และรหัสผ่านอย่างน้อย 12 ตัวอักษร พร้อมยืนยันรหัสผ่านให้ตรงกัน':
+        'Enter your name, a valid email and a password of at least 12 characters. Passwords must match.',
+      กรุณากรอกอีเมลและรหัสผ่านให้ถูกต้อง: 'Enter a valid email address and your password.',
+      การตั้งค่าไม่ถูกต้อง: 'The selected preferences are not valid.',
+      กรุณาใช้รหัสผ่านใหม่ที่ต่างจากรหัสผ่านเดิม:
+        'Choose a password different from your current password.',
+      'รหัสผ่านใหม่ต้องมีอย่างน้อย 12 ตัวอักษรและตรงกันทั้งสองช่อง':
+        'Use at least 12 characters and enter the same new password in both fields.',
+    };
+    return (
+      known[message] ||
+      (!/[\u0E00-\u0E7F]/.test(message) && message
+        ? message
+        : 'The request could not be completed. Please refresh and try again.')
+    );
+  }
+  return (
+    <Context.Provider
+      value={{
+        locale,
+        theme,
+        dark,
+        t,
+        pick,
+        setLocale,
+        setTheme,
+        bindAccount,
+        finishOnboarding: () => persist({ onboardingCompleted: true }),
+        preferenceError,
+        apiError,
+      }}
+    >
+      {children}
+    </Context.Provider>
+  );
 }
-export function useUi(){const ui=useContext(Context);if(!ui)throw Error('UiProvider is required');return ui}
-export function statusLabel(s:string,locale:Locale){const labels:Record<string,string>={'เปิดใหม่':'New','กำลังดำเนินการ':'In progress','รอข้อมูล':'Waiting for information','แก้ไขแล้ว':'Resolved','ปิดงาน':'Closed','ยกเลิก':'Cancelled'};return locale==='en'?(labels[s]||s):s}
-export function categoryLabel(s:string,locale:Locale){const labels:Record<string,string>={'อุปกรณ์':'Hardware','เครือข่าย':'Network','ซอฟต์แวร์':'Software','บัญชีและสิทธิ์':'Accounts & access','อื่น ๆ':'Other'};return locale==='en'?(labels[s]||s):s}
-export function priorityLabel(s:string,locale:Locale){const labels:Record<string,string>={'ต่ำ':'Low','ปกติ':'Normal','สูง':'High','เร่งด่วน':'Urgent'};return locale==='en'?(labels[s]||s):s}
-export function roleLabel(role:string,locale:Locale='th'){return role==='admin'?'Admin':role==='it'?'IT Support':locale==='th'?'พนักงาน':'Employee'}
-export function historyLabel(text:string,locale:Locale){if(locale==='th')return text;const prefixes:Record<string,string>={'สร้างคำร้อง':'Ticket created','เพิ่มข้อความในการสนทนา':'Message added','เปลี่ยนผู้รับผิดชอบ':'Assignee changed','ผู้แจ้งยืนยันปิดงาน · ':'Requester confirmed closure · ','แก้ไขแล้ว: ':'Resolved: ','เปิดงานซ้ำ: ':'Reopened: ','ยกเลิกคำร้อง: ':'Cancelled: ','เปลี่ยนสถานะเป็น ':'Status changed to ','นำเข้าคำร้องเดิม ':'Imported previous ticket '};for(const [th,en]of Object.entries(prefixes)){if(text.startsWith(th)){const rest=text.slice(th.length);return en+(th==='เปลี่ยนสถานะเป็น '?statusLabel(rest,locale):rest)}}return text}
+export function useUi() {
+  const ui = useContext(Context);
+  if (!ui) throw Error('UiProvider is required');
+  return ui;
+}
+export function statusLabel(s: string, locale: Locale) {
+  const labels: Record<string, string> = {
+    เปิดใหม่: 'New',
+    กำลังดำเนินการ: 'In progress',
+    รอข้อมูล: 'Waiting for information',
+    แก้ไขแล้ว: 'Resolved',
+    ปิดงาน: 'Closed',
+    ยกเลิก: 'Cancelled',
+  };
+  return locale === 'en' ? labels[s] || s : s;
+}
+export function categoryLabel(s: string, locale: Locale) {
+  const labels: Record<string, string> = {
+    อุปกรณ์: 'Hardware',
+    เครือข่าย: 'Network',
+    ซอฟต์แวร์: 'Software',
+    บัญชีและสิทธิ์: 'Accounts & access',
+    'อื่น ๆ': 'Other',
+  };
+  return locale === 'en' ? labels[s] || s : s;
+}
+export function priorityLabel(s: string, locale: Locale) {
+  const labels: Record<string, string> = {
+    ต่ำ: 'Low',
+    ปกติ: 'Normal',
+    สูง: 'High',
+    เร่งด่วน: 'Urgent',
+  };
+  return locale === 'en' ? labels[s] || s : s;
+}
+export function roleLabel(role: string, locale: Locale = 'th') {
+  return role === 'admin'
+    ? 'Admin'
+    : role === 'it'
+      ? 'IT Support'
+      : locale === 'th'
+        ? 'พนักงาน'
+        : 'Employee';
+}
+export function historyLabel(text: string, locale: Locale) {
+  if (locale === 'th') return text;
+  const prefixes: Record<string, string> = {
+    สร้างคำร้อง: 'Ticket created',
+    เพิ่มข้อความในการสนทนา: 'Message added',
+    เปลี่ยนผู้รับผิดชอบ: 'Assignee changed',
+    'ผู้แจ้งยืนยันปิดงาน · ': 'Requester confirmed closure · ',
+    'แก้ไขแล้ว: ': 'Resolved: ',
+    'เปิดงานซ้ำ: ': 'Reopened: ',
+    'ยกเลิกคำร้อง: ': 'Cancelled: ',
+    'เปลี่ยนสถานะเป็น ': 'Status changed to ',
+    'นำเข้าคำร้องเดิม ': 'Imported previous ticket ',
+  };
+  for (const [th, en] of Object.entries(prefixes)) {
+    if (text.startsWith(th)) {
+      const rest = text.slice(th.length);
+      return en + (th === 'เปลี่ยนสถานะเป็น ' ? statusLabel(rest, locale) : rest);
+    }
+  }
+  return text;
+}

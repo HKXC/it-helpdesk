@@ -1,9 +1,125 @@
-"use client";
-import {useState} from 'react';
-import {Ticket,MessageSquare,BookOpen,ArrowRight,CheckCircle2} from 'lucide-react';
-import {Dialog} from './dialog';
-import {useUi} from './ui-provider';
-export function Onboarding({open,onClose}:{open:boolean;onClose:()=>void}){const {t,finishOnboarding}=useUi();const [step,S]=useState(0),[busy,B]=useState(false),[error,E]=useState(false);const steps=[{icon:Ticket,title:t('แจ้งปัญหาให้ครบในครั้งเดียว','Create a clear support request'),body:t('เลือก “แจ้งปัญหา” ระบุอาการ สถานที่ อุปกรณ์ และช่องทางติดต่อ ข้อมูลที่ครบช่วยให้ทีม IT เริ่มตรวจสอบได้เร็วขึ้น','Choose New request and include the issue, location, device and contact details. Complete information helps IT start sooner.'),detail:t('ไม่ใส่รหัสผ่านหรือรหัสยืนยันตัวตนในคำร้อง','Keep passwords and verification codes out of requests.')},{icon:MessageSquare,title:t('ติดตามและตอบกลับในคำร้องเดิม','Follow updates in the same request'),body:t('เปิดรายการคำร้องเพื่อดูสถานะและข้อความจาก IT เมื่อแก้ไขแล้ว ให้ทดสอบผลก่อนให้คะแนนและยืนยันปิดงาน','Open Requests to see statuses and messages. When resolved, test the result before rating and confirming closure.'),detail:t('หากยังมีปัญหา สามารถเปิดงานซ้ำพร้อมเหตุผลได้','Reopen the request with a reason if the issue remains.')},{icon:BookOpen,title:t('ค้นคู่มือและปรับการแสดงผลได้เอง','Use the guides and make the interface yours'),body:t('คลังความรู้มีคำแนะนำเป็นขั้นตอน เปลี่ยนภาษาและธีมได้ที่แถบด้านบน และเปิดคำแนะนำนี้ซ้ำได้จากเมนูช่วยเหลือ','Knowledge base has practical step-by-step guides. Change language or theme in the top bar and replay this introduction from Help.'),detail:t('สิทธิ์และเมนูที่เห็นจะสอดคล้องกับบทบาทบัญชีของคุณ','Available menus and actions match your account role.')}];const current=steps[step];
- async function finish(){B(true);E(false);const ok=await finishOnboarding();B(false);if(ok){S(0);onClose()}else E(true)}
- return <Dialog open={open} onClose={()=>{S(0);onClose()}} title={t('แนะนำการใช้งาน Flowdesk','A quick introduction to Flowdesk')} className="onboarding-dialog"><div className="onboarding-body"><span className="onboarding-icon"><current.icon size={34}/></span><div className="onboarding-progress" aria-label={t('ความคืบหน้าคำแนะนำ','Introduction progress')}>{steps.map((_,i)=><span key={i} className={i===step?'current':i<step?'complete':''}/>)}</div><span className="overline">{t('ขั้นตอน','STEP')} {step+1} / {steps.length}</span><h3>{current.title}</h3><p>{current.body}</p><div className="onboarding-tip"><CheckCircle2 size={19}/>{current.detail}</div>{error&&<p className="notice error" role="alert">{t('บันทึกไม่ได้ กรุณาลองอีกครั้ง หรือปิดคำแนะนำไว้ก่อน','Could not save. Try again or close the introduction for now.')}</p>}<div className="onboarding-actions"><button className="text-button" disabled={busy} onClick={()=>finish()}>{t('ข้ามคำแนะนำ','Skip introduction')}</button><div>{step>0&&<button className="secondary" onClick={()=>S(step-1)} disabled={busy}>{t('ย้อนกลับ','Back')}</button>}{step<steps.length-1?<button className="primary" onClick={()=>S(step+1)}>{t('ถัดไป','Next')}<ArrowRight size={18}/></button>:<button className="primary" disabled={busy} onClick={()=>finish()}>{busy?t('กำลังบันทึก','Saving'):t('เริ่มใช้งาน','Start using Flowdesk')}<CheckCircle2 size={18}/></button>}</div></div></div></Dialog>
+'use client';
+import { useState } from 'react';
+import { Ticket, MessageSquare, BookOpen, ArrowRight, CheckCircle2 } from 'lucide-react';
+import { Dialog } from './dialog';
+import { useUi } from './ui-provider';
+export function Onboarding({ open, onClose }: { open: boolean; onClose: () => void }) {
+  const { t, finishOnboarding } = useUi();
+  const [step, S] = useState(0),
+    [busy, B] = useState(false),
+    [error, E] = useState(false);
+  const steps = [
+    {
+      icon: Ticket,
+      title: t('แจ้งปัญหาให้ครบในครั้งเดียว', 'Create a clear support request'),
+      body: t(
+        'เลือก “แจ้งปัญหา” ระบุอาการ สถานที่ อุปกรณ์ และช่องทางติดต่อ ข้อมูลที่ครบช่วยให้ทีม IT เริ่มตรวจสอบได้เร็วขึ้น',
+        'Choose New request and include the issue, location, device and contact details. Complete information helps IT start sooner.',
+      ),
+      detail: t(
+        'ไม่ใส่รหัสผ่านหรือรหัสยืนยันตัวตนในคำร้อง',
+        'Keep passwords and verification codes out of requests.',
+      ),
+    },
+    {
+      icon: MessageSquare,
+      title: t('ติดตามและตอบกลับในคำร้องเดิม', 'Follow updates in the same request'),
+      body: t(
+        'เปิดรายการคำร้องเพื่อดูสถานะและข้อความจาก IT เมื่อแก้ไขแล้ว ให้ทดสอบผลก่อนให้คะแนนและยืนยันปิดงาน',
+        'Open Requests to see statuses and messages. When resolved, test the result before rating and confirming closure.',
+      ),
+      detail: t(
+        'หากยังมีปัญหา สามารถเปิดงานซ้ำพร้อมเหตุผลได้',
+        'Reopen the request with a reason if the issue remains.',
+      ),
+    },
+    {
+      icon: BookOpen,
+      title: t('ค้นคู่มือและปรับการแสดงผลได้เอง', 'Use the guides and make the interface yours'),
+      body: t(
+        'คลังความรู้มีคำแนะนำเป็นขั้นตอน เปลี่ยนภาษาและธีมได้ที่แถบด้านบน และเปิดคำแนะนำนี้ซ้ำได้จากเมนูช่วยเหลือ',
+        'Knowledge base has practical step-by-step guides. Change language or theme in the top bar and replay this introduction from Help.',
+      ),
+      detail: t(
+        'สิทธิ์และเมนูที่เห็นจะสอดคล้องกับบทบาทบัญชีของคุณ',
+        'Available menus and actions match your account role.',
+      ),
+    },
+  ];
+  const current = steps[step];
+  async function finish() {
+    B(true);
+    E(false);
+    const ok = await finishOnboarding();
+    B(false);
+    if (ok) {
+      S(0);
+      onClose();
+    } else E(true);
+  }
+  return (
+    <Dialog
+      open={open}
+      onClose={() => {
+        S(0);
+        onClose();
+      }}
+      title={t('แนะนำการใช้งาน Flowdesk', 'A quick introduction to Flowdesk')}
+      className="onboarding-dialog"
+    >
+      <div className="onboarding-body">
+        <span className="onboarding-icon">
+          <current.icon size={34} />
+        </span>
+        <div
+          className="onboarding-progress"
+          aria-label={t('ความคืบหน้าคำแนะนำ', 'Introduction progress')}
+        >
+          {steps.map((_, i) => (
+            <span key={i} className={i === step ? 'current' : i < step ? 'complete' : ''} />
+          ))}
+        </div>
+        <span className="overline">
+          {t('ขั้นตอน', 'STEP')} {step + 1} / {steps.length}
+        </span>
+        <h3>{current.title}</h3>
+        <p>{current.body}</p>
+        <div className="onboarding-tip">
+          <CheckCircle2 size={19} />
+          {current.detail}
+        </div>
+        {error && (
+          <p className="notice error" role="alert">
+            {t(
+              'บันทึกไม่ได้ กรุณาลองอีกครั้ง หรือปิดคำแนะนำไว้ก่อน',
+              'Could not save. Try again or close the introduction for now.',
+            )}
+          </p>
+        )}
+        <div className="onboarding-actions">
+          <button className="text-button" disabled={busy} onClick={() => finish()}>
+            {t('ข้ามคำแนะนำ', 'Skip introduction')}
+          </button>
+          <div>
+            {step > 0 && (
+              <button className="secondary" onClick={() => S(step - 1)} disabled={busy}>
+                {t('ย้อนกลับ', 'Back')}
+              </button>
+            )}
+            {step < steps.length - 1 ? (
+              <button className="primary" onClick={() => S(step + 1)}>
+                {t('ถัดไป', 'Next')}
+                <ArrowRight size={18} />
+              </button>
+            ) : (
+              <button className="primary" disabled={busy} onClick={() => finish()}>
+                {busy ? t('กำลังบันทึก', 'Saving') : t('เริ่มใช้งาน', 'Start using Flowdesk')}
+                <CheckCircle2 size={18} />
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    </Dialog>
+  );
 }

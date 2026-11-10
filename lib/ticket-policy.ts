@@ -1,19 +1,122 @@
-import {z} from 'zod';
-import type {Account} from './account-auth';
-import type {Job} from './helpdesk';
-export class PolicyError extends Error{constructor(message:string,public status=403){super(message)}}
-export const patchSchema=z.object({status:z.enum(['เปิดใหม่','กำลังดำเนินการ','รอข้อมูล','แก้ไขแล้ว','ปิดงาน','ยกเลิก']).optional(),assigneeId:z.string().nullable().optional(),comments:z.array(z.string().max(2200)).max(300).optional(),resolution:z.string().max(3000).optional(),rating:z.number().int().min(1).max(5).optional()}).strict();
-export function applyTicketPatch(job:Job,patch:z.infer<typeof patchSchema>,actor:Account,reason:string){
- const own=job.requesterId===actor.id,staff=actor.role==='admin'||actor.role==='it';if(!own&&!staff)throw new PolicyError('คุณไม่มีสิทธิ์เข้าถึงคำร้องนี้');
- const keys=Object.keys(patch);let event='';const next={...job};const terminal=['แก้ไขแล้ว','ปิดงาน','ยกเลิก'];
- if(keys.length===1&&patch.assigneeId!==undefined){if(!staff)throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่มอบหมายงานได้');next.assigneeId=patch.assigneeId;event='เปลี่ยนผู้รับผิดชอบ';}
- else if(keys.length===1&&patch.comments){if(patch.comments.length!==job.comments.length+1||job.comments.some((v,i)=>patch.comments![i]!==v))throw new PolicyError('เพิ่มข้อความใหม่ได้ครั้งละหนึ่งข้อความ และแก้ข้อความเดิมไม่ได้',400);const text=patch.comments.at(-1)?.trim();if(!text||text.length>2000)throw new PolicyError('กรุณาระบุข้อความไม่เกิน 2,000 ตัวอักษร',400);const now=new Date().toISOString();next.comments=[...job.comments,actor.name+' · '+new Date(now).toLocaleString('th-TH',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Bangkok'})+'\n'+text];event='เพิ่มข้อความในการสนทนา';}
- else if(patch.status==='แก้ไขแล้ว'&&keys.every(k=>['status','resolution'].includes(k))){if(!staff)throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่บันทึกการแก้ไขได้');if(terminal.includes(job.status)||!patch.resolution?.trim())throw new PolicyError('ต้องเป็นงานที่ยังไม่ปิดและระบุวิธีแก้ไข',400);next.status='แก้ไขแล้ว';next.resolution=patch.resolution.trim();event='แก้ไขแล้ว: '+next.resolution.slice(0,420);}
- else if(patch.status==='ปิดงาน'&&keys.every(k=>['status','rating'].includes(k))){if(!own)throw new PolicyError('ให้ผู้แจ้งเป็นผู้ยืนยันปิดงาน');if(job.status!=='แก้ไขแล้ว'||!patch.rating)throw new PolicyError('ต้องแก้ไขงานแล้วและระบุคะแนนก่อนปิดงาน',400);next.status='ปิดงาน';next.rating=patch.rating;event='ผู้แจ้งยืนยันปิดงาน · '+patch.rating+'/5';}
- else if(patch.status==='เปิดใหม่'&&['แก้ไขแล้ว','ปิดงาน'].includes(job.status)&&keys.length===1){if(!own)throw new PolicyError('ให้ผู้แจ้งเป็นผู้เปิดงานซ้ำ');if(!reason.trim())throw new PolicyError('กรุณาระบุเหตุผลเปิดงานซ้ำ',400);next.status='เปิดใหม่';delete next.rating;event='เปิดงานซ้ำ: '+reason.trim().replace(/^เปิดงานซ้ำ:\s*/,'').slice(0,420);}
- else if(patch.status==='ยกเลิก'&&keys.length===1){if(!own)throw new PolicyError('เฉพาะผู้แจ้งที่ยกเลิกคำร้องได้');if(terminal.includes(job.status)||!reason.trim())throw new PolicyError('ไม่สามารถยกเลิกสถานะนี้ได้ หรือยังไม่มีเหตุผล',400);next.status='ยกเลิก';event='ยกเลิกคำร้อง: '+reason.trim().replace(/^ยกเลิกคำร้อง:\s*/,'').slice(0,420);}
- else if(patch.status&&keys.length===1&&['เปิดใหม่','กำลังดำเนินการ','รอข้อมูล'].includes(patch.status)){if(!staff)throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่เปลี่ยนสถานะดำเนินงานได้');if(terminal.includes(job.status))throw new PolicyError('สถานะนี้ต้องใช้ขั้นตอนเปิดงานซ้ำ',400);next.status=patch.status;event='เปลี่ยนสถานะเป็น '+patch.status;}
- else throw new PolicyError('การแก้ไขไม่ตรงกับขั้นตอนที่อนุญาต',400);
- if((job.history?.length||0)>=500)throw new PolicyError('ประวัติคำร้องถึงขีดจำกัดแล้ว',400);
- const at=new Date().toISOString();next.updatedAt=at;next.history=[...(job.history||[]),{at,actor:actor.name,text:event}];return next;
+import { z } from 'zod';
+import type { Account } from './account-auth';
+import type { Job } from './helpdesk';
+export class PolicyError extends Error {
+  constructor(
+    message: string,
+    public status = 403,
+  ) {
+    super(message);
+  }
+}
+export const patchSchema = z
+  .object({
+    status: z
+      .enum(['เปิดใหม่', 'กำลังดำเนินการ', 'รอข้อมูล', 'แก้ไขแล้ว', 'ปิดงาน', 'ยกเลิก'])
+      .optional(),
+    assigneeId: z.string().nullable().optional(),
+    comments: z.array(z.string().max(2200)).max(300).optional(),
+    resolution: z.string().max(3000).optional(),
+    rating: z.number().int().min(1).max(5).optional(),
+  })
+  .strict();
+export function applyTicketPatch(
+  job: Job,
+  patch: z.infer<typeof patchSchema>,
+  actor: Account,
+  reason: string,
+) {
+  const own = job.requesterId === actor.id,
+    staff = actor.role === 'admin' || actor.role === 'it';
+  if (!own && !staff) throw new PolicyError('คุณไม่มีสิทธิ์เข้าถึงคำร้องนี้');
+  const keys = Object.keys(patch);
+  let event = '';
+  const next = { ...job };
+  const terminal = ['แก้ไขแล้ว', 'ปิดงาน', 'ยกเลิก'];
+  if (keys.length === 1 && patch.assigneeId !== undefined) {
+    if (!staff) throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่มอบหมายงานได้');
+    next.assigneeId = patch.assigneeId;
+    event = 'เปลี่ยนผู้รับผิดชอบ';
+  } else if (keys.length === 1 && patch.comments) {
+    if (
+      patch.comments.length !== job.comments.length + 1 ||
+      job.comments.some((v, i) => patch.comments![i] !== v)
+    )
+      throw new PolicyError('เพิ่มข้อความใหม่ได้ครั้งละหนึ่งข้อความ และแก้ข้อความเดิมไม่ได้', 400);
+    const text = patch.comments.at(-1)?.trim();
+    if (!text || text.length > 2000)
+      throw new PolicyError('กรุณาระบุข้อความไม่เกิน 2,000 ตัวอักษร', 400);
+    const now = new Date().toISOString();
+    next.comments = [
+      ...job.comments,
+      actor.name +
+        ' · ' +
+        new Date(now).toLocaleString('th-TH', {
+          dateStyle: 'medium',
+          timeStyle: 'short',
+          timeZone: 'Asia/Bangkok',
+        }) +
+        '\n' +
+        text,
+    ];
+    event = 'เพิ่มข้อความในการสนทนา';
+  } else if (
+    patch.status === 'แก้ไขแล้ว' &&
+    keys.every((k) => ['status', 'resolution'].includes(k))
+  ) {
+    if (!staff) throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่บันทึกการแก้ไขได้');
+    if (terminal.includes(job.status) || !patch.resolution?.trim())
+      throw new PolicyError('ต้องเป็นงานที่ยังไม่ปิดและระบุวิธีแก้ไข', 400);
+    next.status = 'แก้ไขแล้ว';
+    next.resolution = patch.resolution.trim();
+    event = 'แก้ไขแล้ว: ' + next.resolution.slice(0, 420);
+  } else if (patch.status === 'ปิดงาน' && keys.every((k) => ['status', 'rating'].includes(k))) {
+    if (!own) throw new PolicyError('ให้ผู้แจ้งเป็นผู้ยืนยันปิดงาน');
+    if (job.status !== 'แก้ไขแล้ว' || !patch.rating)
+      throw new PolicyError('ต้องแก้ไขงานแล้วและระบุคะแนนก่อนปิดงาน', 400);
+    next.status = 'ปิดงาน';
+    next.rating = patch.rating;
+    event = 'ผู้แจ้งยืนยันปิดงาน · ' + patch.rating + '/5';
+  } else if (
+    patch.status === 'เปิดใหม่' &&
+    ['แก้ไขแล้ว', 'ปิดงาน'].includes(job.status) &&
+    keys.length === 1
+  ) {
+    if (!own) throw new PolicyError('ให้ผู้แจ้งเป็นผู้เปิดงานซ้ำ');
+    if (!reason.trim()) throw new PolicyError('กรุณาระบุเหตุผลเปิดงานซ้ำ', 400);
+    next.status = 'เปิดใหม่';
+    delete next.rating;
+    event =
+      'เปิดงานซ้ำ: ' +
+      reason
+        .trim()
+        .replace(/^เปิดงานซ้ำ:\s*/, '')
+        .slice(0, 420);
+  } else if (patch.status === 'ยกเลิก' && keys.length === 1) {
+    if (!own) throw new PolicyError('เฉพาะผู้แจ้งที่ยกเลิกคำร้องได้');
+    if (terminal.includes(job.status) || !reason.trim())
+      throw new PolicyError('ไม่สามารถยกเลิกสถานะนี้ได้ หรือยังไม่มีเหตุผล', 400);
+    next.status = 'ยกเลิก';
+    event =
+      'ยกเลิกคำร้อง: ' +
+      reason
+        .trim()
+        .replace(/^ยกเลิกคำร้อง:\s*/, '')
+        .slice(0, 420);
+  } else if (
+    patch.status &&
+    keys.length === 1 &&
+    ['เปิดใหม่', 'กำลังดำเนินการ', 'รอข้อมูล'].includes(patch.status)
+  ) {
+    if (!staff) throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่เปลี่ยนสถานะดำเนินงานได้');
+    if (terminal.includes(job.status))
+      throw new PolicyError('สถานะนี้ต้องใช้ขั้นตอนเปิดงานซ้ำ', 400);
+    next.status = patch.status;
+    event = 'เปลี่ยนสถานะเป็น ' + patch.status;
+  } else throw new PolicyError('การแก้ไขไม่ตรงกับขั้นตอนที่อนุญาต', 400);
+  if ((job.history?.length || 0) >= 500) throw new PolicyError('ประวัติคำร้องถึงขีดจำกัดแล้ว', 400);
+  const at = new Date().toISOString();
+  next.updatedAt = at;
+  next.history = [...(job.history || []), { at, actor: actor.name, text: event }];
+  return next;
 }

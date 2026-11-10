@@ -1,0 +1,10 @@
+node_modules
+dist
+.next
+.vinext
+.wrangler
+.sites-runtime
+outputs
+vendor
+package-lock.json
+drizzle/meta

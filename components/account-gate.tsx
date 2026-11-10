@@ -1,26 +1,463 @@
-"use client";
-import {useState,useEffect,type ReactNode} from 'react';
-import {Headphones,ShieldCheck,ArrowRight,Eye,EyeOff,Mail,LockKeyhole,UserRound,Loader2,Ticket,BookOpen,CheckCircle2,HelpCircle} from 'lucide-react';
-import {UiControls} from './ui-controls';
-import {useUi,type Locale,type Theme} from './ui-provider';
-export type WebAccount={id:string;email:string;name:string;role:'admin'|'it'|'employee';version:number;locale?:Locale;theme?:Theme;onboardingCompleted?:boolean};
-export function AccountGate({children}:{children:(user:WebAccount,logout:()=>Promise<void>)=>ReactNode}){
- const {t,bindAccount,apiError}=useUi();const [user,U]=useState<WebAccount|null>(null),[loading,L]=useState(true),[error,E]=useState(false),[signedOut,S]=useState(false),[expired,X]=useState(false);
- async function load(){L(true);E(false);try{const r=await fetch('/api/auth/session',{cache:'no-store',signal:AbortSignal.timeout(15000)});const d=await r.json() as {user?:WebAccount};if(r.ok&&d.user){bindAccount(d.user);U(d.user)}else if(r.status===401){U(null);bindAccount(null)}else E(true)}catch{E(true)}finally{L(false)}}
- useEffect(()=>{void load();const expired=()=>{U(null);bindAccount(null);X(true)};window.addEventListener('flowdesk-session-expired',expired);return()=>window.removeEventListener('flowdesk-session-expired',expired)},[]);
- async function logout(){const r=await fetch('/api/auth/logout',{method:'POST',headers:{'Content-Type':'application/json'},body:'{}',signal:AbortSignal.timeout(15000)});if(!r.ok)throw Error(apiError(undefined,r.status));U(null);bindAccount(null);S(true);X(false)}
- if(loading||error)return <div className="access-loading"><div className="access-controls"><UiControls/></div><span className="brand-mark"><Headphones size={26}/></span>{loading?<><Loader2 className="spin" size={26}/><p>{t('กำลังตรวจสอบบัญชีผู้ใช้','Checking your account')}</p></>:<><h1>{t('เชื่อมต่อระบบไม่ได้','Unable to connect')}</h1><p>{t('ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง','Check your connection and try again.')}</p><button className="primary" onClick={()=>load()}>{t('ลองอีกครั้ง','Try again')}</button></>}</div>;
- if(user)return children(user,logout);
- return <AuthScreen signedOut={signedOut} expired={expired} onSuccess={next=>{bindAccount(next);U(next)}}/>;
+'use client';
+import { useState, useEffect, type ReactNode } from 'react';
+import {
+  Headphones,
+  ShieldCheck,
+  ArrowRight,
+  Eye,
+  EyeOff,
+  Mail,
+  LockKeyhole,
+  UserRound,
+  Loader2,
+  Ticket,
+  BookOpen,
+  CheckCircle2,
+  HelpCircle,
+} from 'lucide-react';
+import { UiControls } from './ui-controls';
+import { useUi, type Locale, type Theme } from './ui-provider';
+export type WebAccount = {
+  id: string;
+  email: string;
+  name: string;
+  role: 'admin' | 'it' | 'employee';
+  version: number;
+  locale?: Locale;
+  theme?: Theme;
+  onboardingCompleted?: boolean;
+};
+export function AccountGate({
+  children,
+}: {
+  children: (user: WebAccount, logout: () => Promise<void>) => ReactNode;
+}) {
+  const { t, bindAccount, apiError } = useUi();
+  const [user, U] = useState<WebAccount | null>(null),
+    [loading, L] = useState(true),
+    [error, E] = useState(false),
+    [signedOut, S] = useState(false),
+    [expired, X] = useState(false);
+  async function load() {
+    L(true);
+    E(false);
+    try {
+      const r = await fetch('/api/auth/session', {
+        cache: 'no-store',
+        signal: AbortSignal.timeout(15000),
+      });
+      const d = (await r.json()) as { user?: WebAccount };
+      if (r.ok && d.user) {
+        bindAccount(d.user);
+        U(d.user);
+      } else if (r.status === 401) {
+        U(null);
+        bindAccount(null);
+      } else E(true);
+    } catch {
+      E(true);
+    } finally {
+      L(false);
+    }
+  }
+  useEffect(() => {
+    void load();
+    const expired = () => {
+      U(null);
+      bindAccount(null);
+      X(true);
+    };
+    window.addEventListener('flowdesk-session-expired', expired);
+    return () => window.removeEventListener('flowdesk-session-expired', expired);
+  }, []);
+  async function logout() {
+    const r = await fetch('/api/auth/logout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: '{}',
+      signal: AbortSignal.timeout(15000),
+    });
+    if (!r.ok) throw Error(apiError(undefined, r.status));
+    U(null);
+    bindAccount(null);
+    S(true);
+    X(false);
+  }
+  if (loading || error)
+    return (
+      <div className="access-loading">
+        <div className="access-controls">
+          <UiControls />
+        </div>
+        <span className="brand-mark">
+          <Headphones size={26} />
+        </span>
+        {loading ? (
+          <>
+            <Loader2 className="spin" size={26} />
+            <p>{t('กำลังตรวจสอบบัญชีผู้ใช้', 'Checking your account')}</p>
+          </>
+        ) : (
+          <>
+            <h1>{t('เชื่อมต่อระบบไม่ได้', 'Unable to connect')}</h1>
+            <p>{t('ตรวจอินเทอร์เน็ตแล้วลองอีกครั้ง', 'Check your connection and try again.')}</p>
+            <button className="primary" onClick={() => load()}>
+              {t('ลองอีกครั้ง', 'Try again')}
+            </button>
+          </>
+        )}
+      </div>
+    );
+  if (user) return children(user, logout);
+  return (
+    <AuthScreen
+      signedOut={signedOut}
+      expired={expired}
+      onSuccess={(next) => {
+        bindAccount(next);
+        U(next);
+      }}
+    />
+  );
 }
-function AuthScreen({onSuccess,signedOut,expired}:{onSuccess:(u:WebAccount)=>void;signedOut:boolean;expired:boolean}){
- const {t,locale,theme,apiError}=useUi();const [mode,M]=useState<'login'|'register'>('login'),[show,S]=useState(false),[busy,B]=useState(false),[error,E]=useState<{message?:string;status?:number}|null>(null),[help,H]=useState(false),[email,EM]=useState('');
- function change(next:'login'|'register'){M(next);E(null);S(false)}
- async function submit(e:React.FormEvent<HTMLFormElement>){e.preventDefault();if(busy)return;const d=new FormData(e.currentTarget);const password=String(d.get('password'));if(mode==='register'&&password!==d.get('confirmPassword')){E({message:'รหัสผ่านทั้งสองช่องไม่ตรงกัน'});return}B(true);E(null);try{const r=await fetch('/api/auth/'+mode,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({email:String(d.get('email')),password,remember:d.get('remember')==='on',locale,theme,...(mode==='register'?{name:String(d.get('name')),confirmPassword:String(d.get('confirmPassword'))}:{})}),signal:AbortSignal.timeout(25000)});const result=await r.json() as {user?:WebAccount;error?:string};if(!r.ok||!result.user){E({message:result.error,status:r.status===401?undefined:r.status});return}onSuccess(result.user)}catch{E({message:'เชื่อมต่อไม่ได้ กรุณาลองใหม่'})}finally{B(false)}}
- return <div className={"access-page access-"+mode}><section className="access-story"><a className="brand access-brand" href="/"><span className="brand-mark"><Headphones size={26}/></span><span>Flowdesk</span></a><div className="access-story-content"><span className="overline">IT SERVICE DESK</span><h1>{t('ดูแลทุกปัญหา IT\nให้การทำงานเดินต่อ','Clear IT support.\nKeep work moving.')}</h1><p>{t('แจ้งปัญหา ติดตามความคืบหน้า และค้นหาคำแนะนำในพื้นที่เดียว','Report an issue, follow its progress and find practical guidance in one place.')}</p><div className="access-benefits">{[{icon:Ticket,title:t('ติดตามงานได้ชัดเจน','Know where your request stands'),body:t('ทุกคำร้องมีสถานะ ผู้รับผิดชอบ และประวัติการดำเนินการ','Each request has a status, an assignee and a clear activity history.')},{icon:BookOpen,title:t('ค้นคำแนะนำก่อนแจ้งปัญหา','Find answers before you request'),body:t('คู่มือเป็นขั้นตอนสำหรับปัญหาที่พบบ่อยและการใช้งานระบบ','Step-by-step guides for common issues and using the service desk.')},{icon:ShieldCheck,title:t('สิทธิ์เข้าถึงตามหน้าที่','Access that matches your role'),body:t('พนักงานดูแลงานของตนเอง ทีม IT ดูแลคิวงานร่วม','Employees follow their requests while IT manages the shared queue.')}].map(item=><div key={item.title}><span><item.icon size={23}/></span><div><h2>{item.title}</h2><p>{item.body}</p></div></div>)}</div></div><div className="access-story-footer">{t('ศูนย์ช่วยเหลือ IT สำหรับองค์กร','Your organization’s IT service desk')}</div></section><main className="access-main"><div className="access-top"><a className="brand access-mobile-brand" href="/"><span className="brand-mark"><Headphones size={23}/></span>Flowdesk</a><UiControls/></div><div className="access-form" key={mode}><span className="form-emblem">{mode==='login'?<LockKeyhole size={26}/>:<UserRound size={26}/>}</span><h1>{mode==='login'?t('เข้าสู่ระบบ','Sign in'):t('สร้างบัญชีผู้ใช้','Create an account')}</h1><p className="access-intro">{mode==='login'?t('ใช้บัญชี Flowdesk เพื่อแจ้งปัญหาและติดตามงาน IT','Use your Flowdesk account to request and follow IT support.'):t('กรอกข้อมูลเพื่อเริ่มใช้งานศูนย์ช่วยเหลือ IT','Enter your details to start using the IT service desk.')}</p><div className="segmented auth-tabs" aria-label={t('ประเภทการเข้าสู่ระบบ','Account action')}><button type="button" className={mode==='login'?'selected':''} aria-pressed={mode==='login'} disabled={busy} onClick={()=>change('login')}>{t('เข้าสู่ระบบ','Sign in')}</button><button type="button" className={mode==='register'?'selected':''} aria-pressed={mode==='register'} disabled={busy} onClick={()=>change('register')}>{t('สมัครสมาชิก','Register')}</button></div>{expired&&<div className="notice warning" role="status">{t('เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง','Your session expired. Please sign in again.')}</div>}{signedOut&&!expired&&!error&&mode==='login'&&<div className="auth-feedback" role="status"><CheckCircle2 size={18}/>{t('ออกจากระบบเรียบร้อยแล้ว','You have been signed out.')}</div>}{error&&<div className="notice error" role="alert" id="auth-error">{apiError(error.message,error.status)}</div>}<form onSubmit={submit} aria-label={mode==='login'?t('แบบฟอร์มเข้าสู่ระบบ','Sign-in form'):t('แบบฟอร์มสมัครสมาชิก','Registration form')} aria-describedby={error?'auth-error':undefined}>
- {mode==='register'&&<label className="field">{t('ชื่อ–นามสกุล','Full name')}<div className="input-with-icon"><UserRound size={19}/><input name="name" autoComplete="name" required minLength={2} maxLength={70} disabled={busy} placeholder={t('ชื่อที่ใช้ในองค์กร','Your name at work')}/></div></label>}
- <label className="field">{t('อีเมล','Email')}<div className="input-with-icon"><Mail size={19}/><input name="email" type="email" autoComplete="username" value={email} onChange={e=>EM(e.target.value)} required maxLength={254} disabled={busy} placeholder="name@company.com"/></div></label>
- <label className="field">{t('รหัสผ่าน','Password')}<div className="input-with-icon"><LockKeyhole size={19}/><input aria-label={t('รหัสผ่าน','Password')} name="password" type={show?'text':'password'} autoComplete={mode==='login'?'current-password':'new-password'} required minLength={mode==='register'?12:1} maxLength={128} disabled={busy} placeholder={mode==='register'?t('อย่างน้อย 12 ตัวอักษร','At least 12 characters'):t('กรอกรหัสผ่าน','Enter your password')}/><button type="button" className="icon-button" aria-label={show?t('ซ่อนรหัสผ่าน','Hide password'):t('แสดงรหัสผ่าน','Show password')} onClick={()=>S(!show)}>{show?<EyeOff size={19}/>:<Eye size={19}/>}</button></div>{mode==='register'&&<small>{t('ใช้รหัสผ่านอย่างน้อย 12 ตัวอักษร และไม่ใช้ซ้ำกับบริการอื่น','Use at least 12 characters and avoid reusing another password.')}</small>}</label>
- {mode==='register'&&<label className="field">{t('ยืนยันรหัสผ่าน','Confirm password')}<div className="input-with-icon"><ShieldCheck size={19}/><input name="confirmPassword" type={show?'text':'password'} autoComplete="new-password" required minLength={12} maxLength={128} disabled={busy} placeholder={t('กรอกรหัสผ่านอีกครั้ง','Enter the password again')}/></div></label>}
- <label className="checkbox-field"><input name="remember" type="checkbox" disabled={busy}/>{t('จำการเข้าสู่ระบบไว้ 7 วัน','Keep me signed in for 7 days')}</label><button className="primary access-submit" disabled={busy}>{busy?<><Loader2 className="spin" size={19}/>{t('กำลังดำเนินการ','Working')}</>:<>{mode==='login'?t('เข้าสู่ระบบ','Sign in'):t('สร้างบัญชี','Create account')}<ArrowRight size={19}/></>}</button></form><button className="text-button access-help" type="button" aria-expanded={help} onClick={()=>H(!help)}><HelpCircle size={18}/>{t('ต้องการความช่วยเหลือในการเข้าใช้?','Need help signing in?')}</button>{help&&<div className="help-box">{t('ตรวจว่าใช้อีเมลที่สมัครไว้และภาษาแป้นพิมพ์ถูกต้อง หากลืมรหัสผ่าน ให้ติดต่อผู้ดูแลผ่านช่องทางของบริษัท ระบบกู้รหัสผ่านผ่านอีเมลยังไม่ได้เชื่อมต่อ','Check your registered email and keyboard language. If you forgot your password, contact your administrator through the company channel. Email recovery has not been connected yet.')}</div>}</div><footer className="access-footer"><span>Flowdesk</span><span>{t('ศูนย์ช่วยเหลือ IT','IT Service Desk')}</span></footer></main></div>
+function AuthScreen({
+  onSuccess,
+  signedOut,
+  expired,
+}: {
+  onSuccess: (u: WebAccount) => void;
+  signedOut: boolean;
+  expired: boolean;
+}) {
+  const { t, locale, theme, apiError } = useUi();
+  const [mode, M] = useState<'login' | 'register'>('login'),
+    [show, S] = useState(false),
+    [busy, B] = useState(false),
+    [error, E] = useState<{ message?: string; status?: number } | null>(null),
+    [help, H] = useState(false),
+    [email, EM] = useState('');
+  function change(next: 'login' | 'register') {
+    M(next);
+    E(null);
+    S(false);
+  }
+  async function submit(e: React.FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    if (busy) return;
+    const d = new FormData(e.currentTarget);
+    const password = String(d.get('password'));
+    if (mode === 'register' && password !== d.get('confirmPassword')) {
+      E({ message: 'รหัสผ่านทั้งสองช่องไม่ตรงกัน' });
+      return;
+    }
+    B(true);
+    E(null);
+    try {
+      const r = await fetch('/api/auth/' + mode, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          email: String(d.get('email')),
+          password,
+          remember: d.get('remember') === 'on',
+          locale,
+          theme,
+          ...(mode === 'register'
+            ? { name: String(d.get('name')), confirmPassword: String(d.get('confirmPassword')) }
+            : {}),
+        }),
+        signal: AbortSignal.timeout(25000),
+      });
+      const result = (await r.json()) as { user?: WebAccount; error?: string };
+      if (!r.ok || !result.user) {
+        E({ message: result.error, status: r.status === 401 ? undefined : r.status });
+        return;
+      }
+      onSuccess(result.user);
+    } catch {
+      E({ message: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่' });
+    } finally {
+      B(false);
+    }
+  }
+  return (
+    <div className={'access-page access-' + mode}>
+      <section className="access-story">
+        <a className="brand access-brand" href="/">
+          <span className="brand-mark">
+            <Headphones size={26} />
+          </span>
+          <span>Flowdesk</span>
+        </a>
+        <div className="access-story-content">
+          <span className="overline">IT SERVICE DESK</span>
+          <h1>
+            {t('ดูแลทุกปัญหา IT\nให้การทำงานเดินต่อ', 'Clear IT support.\nKeep work moving.')}
+          </h1>
+          <p>
+            {t(
+              'แจ้งปัญหา ติดตามความคืบหน้า และค้นหาคำแนะนำในพื้นที่เดียว',
+              'Report an issue, follow its progress and find practical guidance in one place.',
+            )}
+          </p>
+          <div className="access-benefits">
+            {[
+              {
+                icon: Ticket,
+                title: t('ติดตามงานได้ชัดเจน', 'Know where your request stands'),
+                body: t(
+                  'ทุกคำร้องมีสถานะ ผู้รับผิดชอบ และประวัติการดำเนินการ',
+                  'Each request has a status, an assignee and a clear activity history.',
+                ),
+              },
+              {
+                icon: BookOpen,
+                title: t('ค้นคำแนะนำก่อนแจ้งปัญหา', 'Find answers before you request'),
+                body: t(
+                  'คู่มือเป็นขั้นตอนสำหรับปัญหาที่พบบ่อยและการใช้งานระบบ',
+                  'Step-by-step guides for common issues and using the service desk.',
+                ),
+              },
+              {
+                icon: ShieldCheck,
+                title: t('สิทธิ์เข้าถึงตามหน้าที่', 'Access that matches your role'),
+                body: t(
+                  'พนักงานดูแลงานของตนเอง ทีม IT ดูแลคิวงานร่วม',
+                  'Employees follow their requests while IT manages the shared queue.',
+                ),
+              },
+            ].map((item) => (
+              <div key={item.title}>
+                <span>
+                  <item.icon size={23} />
+                </span>
+                <div>
+                  <h2>{item.title}</h2>
+                  <p>{item.body}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        <div className="access-story-footer">
+          {t('ศูนย์ช่วยเหลือ IT สำหรับองค์กร', 'Your organization’s IT service desk')}
+        </div>
+      </section>
+      <main className="access-main">
+        <div className="access-top">
+          <a className="brand access-mobile-brand" href="/">
+            <span className="brand-mark">
+              <Headphones size={23} />
+            </span>
+            Flowdesk
+          </a>
+          <UiControls />
+        </div>
+        <div className="access-form" key={mode}>
+          <span className="form-emblem">
+            {mode === 'login' ? <LockKeyhole size={26} /> : <UserRound size={26} />}
+          </span>
+          <h1>
+            {mode === 'login'
+              ? t('เข้าสู่ระบบ', 'Sign in')
+              : t('สร้างบัญชีผู้ใช้', 'Create an account')}
+          </h1>
+          <p className="access-intro">
+            {mode === 'login'
+              ? t(
+                  'ใช้บัญชี Flowdesk เพื่อแจ้งปัญหาและติดตามงาน IT',
+                  'Use your Flowdesk account to request and follow IT support.',
+                )
+              : t(
+                  'กรอกข้อมูลเพื่อเริ่มใช้งานศูนย์ช่วยเหลือ IT',
+                  'Enter your details to start using the IT service desk.',
+                )}
+          </p>
+          <div
+            className="segmented auth-tabs"
+            aria-label={t('ประเภทการเข้าสู่ระบบ', 'Account action')}
+          >
+            <button
+              type="button"
+              className={mode === 'login' ? 'selected' : ''}
+              aria-pressed={mode === 'login'}
+              disabled={busy}
+              onClick={() => change('login')}
+            >
+              {t('เข้าสู่ระบบ', 'Sign in')}
+            </button>
+            <button
+              type="button"
+              className={mode === 'register' ? 'selected' : ''}
+              aria-pressed={mode === 'register'}
+              disabled={busy}
+              onClick={() => change('register')}
+            >
+              {t('สมัครสมาชิก', 'Register')}
+            </button>
+          </div>
+          {expired && (
+            <div className="notice warning" role="status">
+              {t(
+                'เซสชันหมดอายุ กรุณาเข้าสู่ระบบอีกครั้ง',
+                'Your session expired. Please sign in again.',
+              )}
+            </div>
+          )}
+          {signedOut && !expired && !error && mode === 'login' && (
+            <div className="auth-feedback" role="status">
+              <CheckCircle2 size={18} />
+              {t('ออกจากระบบเรียบร้อยแล้ว', 'You have been signed out.')}
+            </div>
+          )}
+          {error && (
+            <div className="notice error" role="alert" id="auth-error">
+              {apiError(error.message, error.status)}
+            </div>
+          )}
+          <form
+            onSubmit={submit}
+            aria-label={
+              mode === 'login'
+                ? t('แบบฟอร์มเข้าสู่ระบบ', 'Sign-in form')
+                : t('แบบฟอร์มสมัครสมาชิก', 'Registration form')
+            }
+            aria-describedby={error ? 'auth-error' : undefined}
+          >
+            {mode === 'register' && (
+              <label className="field">
+                {t('ชื่อ–นามสกุล', 'Full name')}
+                <div className="input-with-icon">
+                  <UserRound size={19} />
+                  <input
+                    name="name"
+                    autoComplete="name"
+                    required
+                    minLength={2}
+                    maxLength={70}
+                    disabled={busy}
+                    placeholder={t('ชื่อที่ใช้ในองค์กร', 'Your name at work')}
+                  />
+                </div>
+              </label>
+            )}
+            <label className="field">
+              {t('อีเมล', 'Email')}
+              <div className="input-with-icon">
+                <Mail size={19} />
+                <input
+                  name="email"
+                  type="email"
+                  autoComplete="username"
+                  value={email}
+                  onChange={(e) => EM(e.target.value)}
+                  required
+                  maxLength={254}
+                  disabled={busy}
+                  placeholder="name@company.com"
+                />
+              </div>
+            </label>
+            <label className="field">
+              {t('รหัสผ่าน', 'Password')}
+              <div className="input-with-icon">
+                <LockKeyhole size={19} />
+                <input
+                  aria-label={t('รหัสผ่าน', 'Password')}
+                  name="password"
+                  type={show ? 'text' : 'password'}
+                  autoComplete={mode === 'login' ? 'current-password' : 'new-password'}
+                  required
+                  minLength={mode === 'register' ? 12 : 1}
+                  maxLength={128}
+                  disabled={busy}
+                  placeholder={
+                    mode === 'register'
+                      ? t('อย่างน้อย 12 ตัวอักษร', 'At least 12 characters')
+                      : t('กรอกรหัสผ่าน', 'Enter your password')
+                  }
+                />
+                <button
+                  type="button"
+                  className="icon-button"
+                  aria-label={
+                    show ? t('ซ่อนรหัสผ่าน', 'Hide password') : t('แสดงรหัสผ่าน', 'Show password')
+                  }
+                  onClick={() => S(!show)}
+                >
+                  {show ? <EyeOff size={19} /> : <Eye size={19} />}
+                </button>
+              </div>
+              {mode === 'register' && (
+                <small>
+                  {t(
+                    'ใช้รหัสผ่านอย่างน้อย 12 ตัวอักษร และไม่ใช้ซ้ำกับบริการอื่น',
+                    'Use at least 12 characters and avoid reusing another password.',
+                  )}
+                </small>
+              )}
+            </label>
+            {mode === 'register' && (
+              <label className="field">
+                {t('ยืนยันรหัสผ่าน', 'Confirm password')}
+                <div className="input-with-icon">
+                  <ShieldCheck size={19} />
+                  <input
+                    name="confirmPassword"
+                    type={show ? 'text' : 'password'}
+                    autoComplete="new-password"
+                    required
+                    minLength={12}
+                    maxLength={128}
+                    disabled={busy}
+                    placeholder={t('กรอกรหัสผ่านอีกครั้ง', 'Enter the password again')}
+                  />
+                </div>
+              </label>
+            )}
+            <label className="checkbox-field">
+              <input name="remember" type="checkbox" disabled={busy} />
+              {t('จำการเข้าสู่ระบบไว้ 7 วัน', 'Keep me signed in for 7 days')}
+            </label>
+            <button className="primary access-submit" disabled={busy}>
+              {busy ? (
+                <>
+                  <Loader2 className="spin" size={19} />
+                  {t('กำลังดำเนินการ', 'Working')}
+                </>
+              ) : (
+                <>
+                  {mode === 'login'
+                    ? t('เข้าสู่ระบบ', 'Sign in')
+                    : t('สร้างบัญชี', 'Create account')}
+                  <ArrowRight size={19} />
+                </>
+              )}
+            </button>
+          </form>
+          <button
+            className="text-button access-help"
+            type="button"
+            aria-expanded={help}
+            onClick={() => H(!help)}
+          >
+            <HelpCircle size={18} />
+            {t('ต้องการความช่วยเหลือในการเข้าใช้?', 'Need help signing in?')}
+          </button>
+          {help && (
+            <div className="help-box">
+              {t(
+                'ตรวจว่าใช้อีเมลที่สมัครไว้และภาษาแป้นพิมพ์ถูกต้อง หากลืมรหัสผ่าน ให้ติดต่อผู้ดูแลผ่านช่องทางของบริษัท ระบบกู้รหัสผ่านผ่านอีเมลยังไม่ได้เชื่อมต่อ',
+                'Check your registered email and keyboard language. If you forgot your password, contact your administrator through the company channel. Email recovery has not been connected yet.',
+              )}
+            </div>
+          )}
+        </div>
+        <footer className="access-footer">
+          <span>Flowdesk</span>
+          <span>{t('ศูนย์ช่วยเหลือ IT', 'IT Service Desk')}</span>
+        </footer>
+      </main>
+    </div>
+  );
 }
