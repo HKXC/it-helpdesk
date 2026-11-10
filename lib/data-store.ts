@@ -9,5 +9,6 @@ export interface DataStore{
  remove(table:Table,where:Filters):Promise<void>;
  incrementLimit(key:string,expires:number):Promise<number>;
  changeAccount(input:{actor:string;target:string;version:number;role:string;active:number;root:string;auditId:string;detail:string;now:number}):Promise<boolean>;
+ changePassword(input:{id:string;oldHash:string;newHash:string;tokenHash:string;expires:number;now:number}):Promise<boolean>;
 }
 export function identifier(s:string){if(!/^[a-z][a-z_]*$/.test(s))throw Error('Invalid database identifier');return s}

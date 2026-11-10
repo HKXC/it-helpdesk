@@ -10,7 +10,9 @@ export const accounts=sqliteTable('accounts',{
  id:text('id').primaryKey(),email:text('email').notNull().unique(),
  name:text('name').notNull(),passwordHash:text('password_hash').notNull(),createdAt:integer('created_at').notNull(),
  role:text('role').notNull().default('employee'),active:integer('active').notNull().default(1),
- version:integer('version').notNull().default(0),legacyMigrated:integer('legacy_migrated').notNull().default(0)
+ version:integer('version').notNull().default(0),legacyMigrated:integer('legacy_migrated').notNull().default(0),
+ locale:text('locale').notNull().default('th'),theme:text('theme').notNull().default('system'),
+ onboardingCompleted:integer('onboarding_completed').notNull().default(0)
 });
 export const sessions=sqliteTable('account_sessions',{
  tokenHash:text('token_hash').primaryKey(),accountId:text('account_id').notNull().references(()=>accounts.id),

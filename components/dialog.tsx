@@ -1,0 +1,5 @@
+"use client";
+import {useEffect,useRef,type ReactNode} from 'react';
+import {X} from 'lucide-react';
+import {useUi} from './ui-provider';
+export function Dialog({open,onClose,title,children,drawer=false,className=''}:{open:boolean;onClose:()=>void;title:string;children:ReactNode;drawer?:boolean;className?:string}){const ref=useRef<HTMLDialogElement>(null);const {t}=useUi();useEffect(()=>{const dialog=ref.current;if(!dialog)return;if(open&&!dialog.open)dialog.showModal();else if(!open&&dialog.open)dialog.close()},[open]);useEffect(()=>{if(!open)return;const old=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.body.style.overflow=old}},[open]);return <dialog ref={ref} className={(drawer?'side-dialog':'center-dialog')+' '+className} aria-label={title} onCancel={e=>{e.preventDefault();onClose()}}><div className="dialog-header"><h2>{title}</h2><button type="button" className="icon-button" aria-label={t('ปิดหน้าต่าง','Close dialog')} onClick={onClose}><X size={22}/></button></div>{children}</dialog>}

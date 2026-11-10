@@ -66,3 +66,13 @@ These checks execute the actual Supabase SQL in local PostgreSQL/WASM and verify
 ## Remaining production scope
 
 Email verification/recovery, registration-domain/approval policy, file attachments, email notifications, working-hours/holiday SLA escalation, scheduled backup/restore verification, monitoring and retention policy still need implementation. Current bounds: 500 tickets per requester, 5,000 loaded queue rows, 1,000 Admin user rows, 300 comments and 500 history events per ticket. Add server pagination for larger deployments. Admin audit is append-only through the application API, but is not tamper-proof against database operators.
+
+## Interface update
+
+Readable high-contrast light/dark/system themes, Thai/English interface and 15 bilingual knowledge guides. Search, category filters, device-local bookmarks and article deep links are available. Signed-in language/theme and introduction completion are stored per account. New accounts receive a short introduction, replayable from Help or Settings. Animations respect prefers-reduced-motion. User-written ticket content is not machine-translated.
+
+Signed-in users can change their password by verifying the current password; this atomically revokes old sessions and issues a new session. Sign out all devices is also available. Email password recovery is still pending integration.
+
+Apply both Supabase migrations in order: 001_flowdesk.sql, then 002_ui_preferences.sql. Current hosting uses Cloudflare Workers/D1; migration to Vercel requires adapting the runtime binding and deployment configuration before deployment there.
+
+Additional verification: node scripts/test-preferences.mjs tests preference ownership, schema validation, onboarding persistence, password rotation and all-device logout against the local server.

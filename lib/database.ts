@@ -14,6 +14,11 @@ function d1Store():DataStore{
  db.prepare("UPDATE accounts SET role = ?, active = ?, version = version + 1 WHERE id = ? AND version = ? AND id <> ? AND id <> ? AND EXISTS (SELECT 1 FROM accounts a WHERE a.id = ? AND a.role = 'admin' AND a.active = 1)").bind(p.role,p.active,p.target,p.version,p.actor,p.root,p.actor),
  db.prepare('INSERT INTO role_audit (id,actor_id,target_id,detail,created_at) SELECT ?,?,?,?,? WHERE changes() = 1').bind(p.auditId,p.actor,p.target,p.detail,p.now),
  db.prepare('DELETE FROM account_sessions WHERE account_id = ? AND EXISTS (SELECT 1 FROM role_audit WHERE id = ?)').bind(p.target,p.auditId)
+ ]);return Boolean(results[0].meta.changes)},
+ async changePassword(p){const results=await db.batch([
+ db.prepare('UPDATE accounts SET password_hash = ? WHERE id = ? AND password_hash = ? AND active = 1').bind(p.newHash,p.id,p.oldHash),
+ db.prepare('DELETE FROM account_sessions WHERE account_id = ? AND EXISTS (SELECT 1 FROM accounts WHERE id = ? AND password_hash = ?)').bind(p.id,p.id,p.newHash),
+ db.prepare('INSERT INTO account_sessions (token_hash,account_id,expires_at,created_at) SELECT ?,?,?,? WHERE EXISTS (SELECT 1 FROM accounts WHERE id = ? AND password_hash = ?)').bind(p.tokenHash,p.id,p.expires,p.now,p.id,p.newHash)
  ]);return Boolean(results[0].meta.changes)}
  };
 }

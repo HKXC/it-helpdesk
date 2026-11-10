@@ -13,6 +13,7 @@ export function createSupabaseStore(base:string,secret:string,send:typeof fetch=
  async patch(table,where,row){if(!Object.keys(where).length)throw Error('Filtered update required');Object.keys(row).forEach(identifier);return await call(identifier('flowdesk_'+table)+'?'+query(where),'PATCH',row) as Row[]},
  async remove(table,where){if(!Object.keys(where).length)throw Error('Filtered delete required');await call(identifier('flowdesk_'+table)+'?'+query(where),'DELETE')},
  async incrementLimit(key,expires){return Number(await call('rpc/flowdesk_increment_limit','POST',{p_key:key,p_expires:expires}))},
- async changeAccount(input){return Boolean(await call('rpc/flowdesk_change_account','POST',{p_input:input}))}
+ async changeAccount(input){return Boolean(await call('rpc/flowdesk_change_account','POST',{p_input:input}))},
+ async changePassword(input){return Boolean(await call('rpc/flowdesk_change_password','POST',{p_input:input}))}
  };
 }

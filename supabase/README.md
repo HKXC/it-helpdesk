@@ -38,3 +38,7 @@
 คิวงานรุ่นนี้โหลดสูงสุด 5,000 แถว และรายชื่อผู้ใช้สูงสุด 1,000 บัญชีสำหรับ Admin ควรเพิ่ม pagination ฝั่งเซิร์ฟเวอร์ก่อนมีข้อมูลจำนวนมาก Supabase Data API อาจจำกัดจำนวนแถวต่อ request ตาม Project settings ต้องตั้งให้สอดคล้องหรือเพิ่ม pagination ก่อนใช้งานระดับองค์กร
 
 เอกสารอ้างอิง: https://supabase.com/docs/guides/api/securing-your-api และ https://supabase.com/docs/guides/getting-started/api-keys
+
+## ส่วนเพิ่มด้านบัญชีและการแสดงผล
+
+หลัง 001_flowdesk.sql ให้รัน migrations/002_ui_preferences.sql เพื่อเพิ่มภาษา ธีม สถานะคำแนะนำครั้งแรก และ RPC เปลี่ยนรหัสผ่านแบบยกเลิก session เดิมใน transaction เดียว ค่าภาษา/ธีมและสถานะคำแนะนำต้องย้ายพร้อมข้อมูลบัญชีด้วย
