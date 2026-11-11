@@ -2,6 +2,7 @@
 import { Languages, Moon, Sun } from 'lucide-react';
 import { useUi } from './ui-provider';
 import { playThemeSwitch } from './theme-bulb';
+import { playLangSwitch } from './lang-flip';
 export function UiControls() {
   const { locale, dark, t, setLocale, setTheme } = useUi();
   return (
@@ -10,7 +11,10 @@ export function UiControls() {
         type="button"
         className="control-button language-control"
         aria-label={t('สลับภาษาเป็นอังกฤษ', 'Switch language to Thai')}
-        onClick={() => setLocale(locale === 'th' ? 'en' : 'th')}
+        onClick={(e) => {
+          const next = locale === 'th' ? 'en' : 'th';
+          playLangSwitch(e.currentTarget, next === 'en', () => setLocale(next));
+        }}
       >
         <Languages size={18} />
         <span>{locale === 'th' ? 'EN' : 'ไทย'}</span>

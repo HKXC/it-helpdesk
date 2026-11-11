@@ -4719,3 +4719,120 @@ body {
 ::view-transition-group(fd-bulb) {
   z-index: 3;
 }
+
+/* ===== Language switch: flip card + text blur swap ===== */
+.fd-lang-fx {
+  position: fixed;
+  z-index: 2147483000;
+  transform: translateX(-50%);
+  pointer-events: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  perspective: 600px;
+  view-transition-name: fd-lang;
+  animation: fd-lang-in 0.3s var(--ease-spring, ease-out) both;
+}
+.fd-lang-card {
+  position: relative;
+  width: 92px;
+  height: 64px;
+  transform-style: preserve-3d;
+  transition: transform 0.55s cubic-bezier(0.34, 1.4, 0.5, 1);
+}
+.fd-lang-fx.is-flip .fd-lang-card {
+  transform: rotateY(180deg);
+}
+.fd-lang-face {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  border-radius: 14px;
+  backface-visibility: hidden;
+  color: #fff;
+  box-shadow: 0 10px 26px rgb(11 47 58 / 0.35);
+}
+.fd-lang-face b {
+  font-size: 22px;
+  line-height: 1.1;
+}
+.fd-lang-face small {
+  font-size: 11px;
+  opacity: 0.85;
+  letter-spacing: 0.04em;
+}
+.fd-lang-face.front {
+  background: linear-gradient(135deg, #0f5a58, #1b3d6b);
+}
+.fd-lang-face.back {
+  background: linear-gradient(135deg, #12857c, #6340d0);
+  transform: rotateY(180deg);
+}
+.fd-lang-bubble {
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 13px;
+  font-weight: 600;
+  box-shadow: var(--shadow-md, 0 6px 20px #0002);
+  opacity: 0;
+  transform: translateY(-6px) scale(0.9);
+  transition:
+    opacity 0.25s,
+    transform 0.35s cubic-bezier(0.34, 1.4, 0.5, 1);
+  transition-delay: 0.35s;
+}
+.fd-lang-fx.is-flip .fd-lang-bubble {
+  opacity: 1;
+  transform: none;
+}
+.fd-lang-fx.is-leave {
+  animation: fd-lang-out 0.35s ease-in both;
+}
+@keyframes fd-lang-in {
+  from {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-12px) scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(-50%);
+  }
+}
+@keyframes fd-lang-out {
+  to {
+    opacity: 0;
+    transform: translateX(-50%) translateY(-10px) scale(0.9);
+  }
+}
+::view-transition-group(fd-lang) {
+  z-index: 3;
+}
+.fd-lang-swap::view-transition-old(root) {
+  animation: fd-text-out 0.28s ease-in both;
+}
+.fd-lang-swap::view-transition-new(root) {
+  animation: fd-text-in 0.42s ease-out 0.12s both;
+}
+@keyframes fd-text-out {
+  to {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+@keyframes fd-text-in {
+  from {
+    opacity: 0;
+    filter: blur(6px);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .fd-lang-fx {
+    display: none;
+  }
+}
