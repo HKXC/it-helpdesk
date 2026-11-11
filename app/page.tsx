@@ -48,6 +48,7 @@ import { TicketDetails, StatusBadge } from '../components/ticket-details';
 import { Onboarding } from '../components/onboarding';
 import { SlaChip } from '../components/sla';
 import { CountUp } from '../components/count-up';
+import { playAuthTransition } from '../components/auth-transition';
 import { formatDuration, SLA_TARGETS, slaBreached, slaOf } from '../lib/sla';
 import KnowledgeBase from '../components/knowledge-base';
 import UserManagement from '../components/user-management';
@@ -205,7 +206,13 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
     if (loggingOut) return;
     LO(true);
     try {
-      await logout();
+      await playAuthTransition({
+        mode: 'out',
+        title: t('แล้วพบกันใหม่, ', 'See you soon, ') + user.name,
+        subtitle: t('ออกจากระบบเรียบร้อยแล้ว', 'You have been signed out.'),
+        origin: document.activeElement as HTMLElement | null,
+        apply: logout,
+      });
     } catch {
       T(t('ออกจากระบบไม่สำเร็จ กรุณาลองใหม่', 'Could not sign out. Please try again.'));
     } finally {

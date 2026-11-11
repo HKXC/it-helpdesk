@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { UiControls } from './ui-controls';
 import { useUi, type Locale, type Theme } from './ui-provider';
+import { playAuthTransition } from './auth-transition';
 export type WebAccount = {
   id: string;
   email: string;
@@ -173,7 +174,17 @@ function AuthScreen({
         E({ message: result.error, status: r.status === 401 ? undefined : r.status });
         return;
       }
-      onSuccess(result.user);
+      const signedIn = result.user;
+      await playAuthTransition({
+        mode: 'in',
+        title:
+          mode === 'register'
+            ? t('ยินดีต้อนรับสู่ Flowdesk', 'Welcome to Flowdesk')
+            : t('ยินดีต้อนรับ, ', 'Welcome, ') + signedIn.name,
+        subtitle: t('กำลังเตรียมพื้นที่ทำงานของคุณ…', 'Getting your workspace ready…'),
+        origin: (e.nativeEvent as SubmitEvent).submitter as HTMLElement | null,
+        apply: () => onSuccess(signedIn),
+      });
     } catch {
       E({ message: 'เชื่อมต่อไม่ได้ กรุณาลองใหม่' });
     } finally {

@@ -4836,3 +4836,148 @@ body {
     display: none;
   }
 }
+
+/* ===== Sign-in / sign-out transition ===== */
+.fd-auth-fx {
+  position: fixed;
+  inset: 0;
+  z-index: 2147483200;
+  display: grid;
+  place-items: center;
+  color: #fff;
+  background:
+    radial-gradient(600px 400px at 70% 20%, rgb(113 216 198 / 0.35), transparent 60%),
+    radial-gradient(500px 400px at 20% 90%, rgb(129 140 248 / 0.3), transparent 60%),
+    linear-gradient(135deg, #0f4c4f 0%, #0b2f3a 55%, #1b3d6b 100%);
+  clip-path: circle(0px at 50% 50%);
+}
+.fd-auth-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: 8px;
+  padding: 24px;
+  opacity: 0;
+  transform: translateY(14px) scale(0.96);
+}
+.fd-auth-fx.is-covered .fd-auth-card {
+  animation: fd-auth-card-in 0.45s cubic-bezier(0.34, 1.4, 0.5, 1) both;
+}
+.fd-auth-fx.is-leaving .fd-auth-card {
+  animation: fd-auth-card-out 0.3s ease-in both;
+}
+.fd-auth-icon {
+  width: 84px;
+  height: 84px;
+  display: grid;
+  place-items: center;
+  border-radius: 24px;
+  background: rgb(255 255 255 / 0.1);
+  box-shadow:
+    0 0 0 1px rgb(255 255 255 / 0.12) inset,
+    0 12px 40px rgb(0 0 0 / 0.25);
+  margin-bottom: 10px;
+}
+.fd-auth-ring {
+  stroke: #71d8c6;
+  stroke-dasharray: 151;
+  stroke-dashoffset: 151;
+}
+.fd-auth-check {
+  stroke: #fff;
+  stroke-dasharray: 40;
+  stroke-dashoffset: 40;
+}
+.fd-auth-fx.is-covered .fd-auth-ring {
+  animation: fd-draw 0.6s ease-out 0.1s forwards;
+}
+.fd-auth-fx.is-covered .fd-auth-check {
+  animation: fd-draw 0.35s ease-out 0.55s forwards;
+}
+.fd-auth-wave {
+  font-size: 44px;
+  display: inline-block;
+  transform-origin: 70% 80%;
+}
+.fd-auth-fx.is-covered .fd-auth-wave {
+  animation: fd-wave 1s ease-in-out 0.1s;
+}
+.fd-auth-card h2 {
+  margin: 0;
+  font-size: clamp(22px, 4vw, 32px);
+  letter-spacing: -0.01em;
+  color: #fff;
+}
+.fd-auth-card p {
+  margin: 0;
+  font-size: 15px;
+  color: rgb(230 244 243 / 0.85);
+}
+.fd-auth-dots {
+  display: flex;
+  gap: 6px;
+  margin-top: 10px;
+}
+.fd-auth-dots i {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #71d8c6;
+  animation: fd-dot 1s ease-in-out infinite;
+}
+.fd-auth-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+.fd-auth-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+.fd-auth-fx.is-out .fd-auth-dots {
+  display: none;
+}
+@keyframes fd-auth-card-in {
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fd-auth-card-out {
+  from {
+    opacity: 1;
+    transform: none;
+  }
+  to {
+    opacity: 0;
+    transform: translateY(-10px) scale(0.98);
+  }
+}
+@keyframes fd-draw {
+  to {
+    stroke-dashoffset: 0;
+  }
+}
+@keyframes fd-wave {
+  0%,
+  100% {
+    transform: rotate(0);
+  }
+  20%,
+  60% {
+    transform: rotate(18deg);
+  }
+  40%,
+  80% {
+    transform: rotate(-10deg);
+  }
+}
+@keyframes fd-dot {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-4px);
+  }
+}
