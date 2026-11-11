@@ -1371,6 +1371,23 @@ dialog[open] {
   padding: 20px;
   margin-bottom: 25px;
 }
+.detail-management-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.save-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--muted);
+  min-height: 20px;
+}
+.save-indicator svg:not(.spin) {
+  color: var(--primary);
+}
 .read-field span {
   display: block;
   font-size: 13px;
@@ -3164,4 +3181,11 @@ dd {
   .rating-options label {
     padding: 4px;
   }
+}
+.required-mark {
+  color: var(--danger, #d64545);
+  margin-left: 2px;
+}
+.request-form :is(input, select, textarea) {
+  scroll-margin-block: 96px;
 }

@@ -80,7 +80,20 @@ export function TicketForm({
       title={t('แจ้งปัญหาใหม่', 'New support request')}
       className="request-dialog"
     >
-      <form ref={form} onSubmit={submit} className="request-form">
+      <form
+        ref={form}
+        onSubmit={submit}
+        className="request-form"
+        onInvalidCapture={(e) => {
+          const el = e.target as HTMLInputElement | HTMLTextAreaElement;
+          el.setCustomValidity(
+            el.validity.valueMissing
+              ? t('กรุณากรอกข้อมูลช่องนี้', 'Please fill in this field.')
+              : '',
+          );
+        }}
+        onInputCapture={(e) => (e.target as HTMLInputElement).setCustomValidity?.('')}
+      >
         <p className="dialog-intro">
           {t(
             'ระบุอาการและข้อมูลที่จำเป็น ทีม IT จะติดตามเรื่องผ่านคำร้องนี้',
@@ -98,7 +111,12 @@ export function TicketForm({
         )}
         <fieldset disabled={saving || pending} className="form-fields">
           <label className="field">
-            {t('หัวข้อปัญหา', 'Subject')}
+            <span>
+              {t('หัวข้อปัญหา', 'Subject')}{' '}
+              <span className="required-mark" aria-hidden="true">
+                *
+              </span>
+            </span>
             <input
               required
               name="title"
@@ -150,7 +168,12 @@ export function TicketForm({
           </label>
           <div className="form-grid">
             <label className="field">
-              {t('แผนก', 'Department')}
+              <span>
+                {t('แผนก', 'Department')}{' '}
+                <span className="required-mark" aria-hidden="true">
+                  *
+                </span>
+              </span>
               <input
                 required
                 name="department"
@@ -159,7 +182,12 @@ export function TicketForm({
               />
             </label>
             <label className="field">
-              {t('สถานที่', 'Location')}
+              <span>
+                {t('สถานที่', 'Location')}{' '}
+                <span className="required-mark" aria-hidden="true">
+                  *
+                </span>
+              </span>
               <input
                 required
                 name="location"
@@ -172,7 +200,12 @@ export function TicketForm({
               <input name="asset" maxLength={80} placeholder="NB-024" />
             </label>
             <label className="field">
-              {t('ช่องทางติดต่อ', 'Contact')}
+              <span>
+                {t('ช่องทางติดต่อ', 'Contact')}{' '}
+                <span className="required-mark" aria-hidden="true">
+                  *
+                </span>
+              </span>
               <input
                 required
                 name="contact"
@@ -183,7 +216,12 @@ export function TicketForm({
             </label>
           </div>
           <label className="field">
-            {t('รายละเอียดและผลกระทบ', 'Description and impact')}
+            <span>
+              {t('รายละเอียดและผลกระทบ', 'Description and impact')}{' '}
+              <span className="required-mark" aria-hidden="true">
+                *
+              </span>
+            </span>
             <textarea
               required
               name="detail"

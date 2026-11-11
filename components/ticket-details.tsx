@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import {
   CheckCircle2,
   RefreshCw,
@@ -69,13 +69,29 @@ export function TicketDetails({
   const [action, A] = useState<'resolve' | 'reopen' | 'cancel' | ''>(''),
     [reason, R] = useState(''),
     [reply, S] = useState(''),
-    [rating, RT] = useState(5);
+    [rating, RT] = useState(5),
+    [justSaved, JS] = useState(false),
+    wasSaving = useRef(false);
   useEffect(() => {
     A('');
     R('');
     S('');
     RT(5);
+    JS(false);
   }, [job?.id]);
+  useEffect(() => {
+    if (saving) {
+      wasSaving.current = true;
+      JS(false);
+      return;
+    }
+    if (!wasSaving.current) return;
+    wasSaving.current = false;
+    if (error) return;
+    JS(true);
+    const timer = setTimeout(() => JS(false), 2500);
+    return () => clearTimeout(timer);
+  }, [saving, error]);
   const staff = role === 'admin' || role === 'it',
     own = job?.requesterId === user.id,
     terminal = job ? ['แก้ไขแล้ว', 'ปิดงาน', 'ยกเลิก'].includes(job.status) : false;
@@ -167,7 +183,20 @@ export function TicketDetails({
             </div>
           )}
           <section className="detail-management">
-            <h2>{t('การดำเนินงาน', 'Work management')}</h2>
+            <div className="detail-management-heading">
+              <h2>{t('การดำเนินงาน', 'Work management')}</h2>
+              <span className="save-indicator" role="status" aria-live="polite">
+                {saving ? (
+                  <>
+                    <Loader2 className="spin" size={15} /> {t('กำลังบันทึก…', 'Saving…')}
+                  </>
+                ) : justSaved ? (
+                  <>
+                    <CheckCircle2 size={15} /> {t('บันทึกแล้ว', 'Saved')}
+                  </>
+                ) : null}
+              </span>
+            </div>
             <div className="form-grid">
               {staff && !terminal ? (
                 <label className="field">
