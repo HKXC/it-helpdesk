@@ -1,4 +1,3 @@
-import { env } from 'cloudflare:workers';
 import { digest, randomToken } from './passwords';
 import { database } from './database';
 export type Role = 'admin' | 'it' | 'employee';
@@ -51,7 +50,7 @@ export async function loadAccount(id: string): Promise<Account | null> {
     )
   )[0];
   if (!row || Number(row.active) !== 1) return null;
-  if (id === env.ROOT_ADMIN_ID && row.role !== 'admin') {
+  if (id === process.env.ROOT_ADMIN_ID && row.role !== 'admin') {
     const changed = await db.patch(
       'accounts',
       { id, version: row.version },

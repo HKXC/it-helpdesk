@@ -1,4 +1,3 @@
-import { env } from 'cloudflare:workers';
 import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { getAccount, readBody, response, sameOrigin } from '../../../../lib/account-auth';
@@ -22,7 +21,7 @@ export async function GET(request: Request) {
     return response({
       users: users.map((u) => ({
         ...u,
-        protected: u.id === env.ROOT_ADMIN_ID || u.id === actor.id,
+        protected: u.id === process.env.ROOT_ADMIN_ID || u.id === actor.id,
       })),
       audit,
       database: databaseInfo(),
@@ -61,7 +60,7 @@ export async function PATCH(request: Request) {
     }
     if (!parsed.success) return response({ error: 'ข้อมูลบทบาทไม่ถูกต้อง' }, 400);
     const input = parsed.data;
-    if (input.id === actor.id || input.id === env.ROOT_ADMIN_ID)
+    if (input.id === actor.id || input.id === process.env.ROOT_ADMIN_ID)
       return response({ error: 'ไม่สามารถเปลี่ยนสิทธิ์ตนเองหรือบัญชี Admin หลักได้' }, 403);
     const db = database(),
       target = (await db.select('accounts', { id: input.id }, ['name', 'role', 'active'], 1))[0];
@@ -82,7 +81,7 @@ export async function PATCH(request: Request) {
       role: input.role,
       active: input.active,
       version: input.version,
-      root: env.ROOT_ADMIN_ID || '',
+      root: process.env.ROOT_ADMIN_ID || '',
       auditId: randomUUID(),
       detail,
       now: Date.now(),
