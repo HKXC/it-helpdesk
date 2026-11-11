@@ -688,121 +688,122 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
           </div>
         </header>
         <main className="main-content" id="main-content">
-          <div className="page-heading">
-            <div>
-              <h1>{pageTitle}</h1>
-              <p>{descriptions[page]}</p>
-            </div>
-            <div className="page-actions">
-              {!['settings', 'knowledge', 'users'].includes(page) && (
-                <button
-                  className="secondary refresh-button"
-                  disabled={status !== 'saved'}
-                  onClick={() => desk.reload()}
-                >
-                  <RefreshCw size={19} />
-                  {t('อัปเดตข้อมูล', 'Refresh')}
-                </button>
-              )}
-              <button className="primary" onClick={() => newRequest()}>
-                <Plus size={20} />
-                {t('แจ้งปัญหา', 'New request')}
-              </button>
-            </div>
-          </div>
-          <div
-            className={'sync-status ' + (['error', 'conflict'].includes(status) ? 'has-error' : '')}
-            role={error ? 'alert' : 'status'}
-          >
-            {status === 'loading' ? (
-              <>
-                <Loader2 className="spin" size={18} />
-                <span>{t('กำลังโหลดข้อมูลล่าสุด', 'Loading the latest data')}</span>
-              </>
-            ) : status === 'saving' ? (
-              <>
-                <Loader2 className="spin" size={18} />
-                <span>{t('กำลังบันทึกข้อมูล', 'Saving changes')}</span>
-              </>
-            ) : error ? (
-              <>
-                <AlertCircle size={20} />
-                <div>
-                  <p>{error}</p>
-                  <div className="notice-actions">
-                    {status !== 'conflict' && (
-                      <button className="secondary compact" onClick={() => desk.retry()}>
-                        {t('ลองอีกครั้ง', 'Try again')}
-                      </button>
-                    )}
-                    <button className="secondary compact" onClick={() => desk.reload()}>
-                      {t('โหลดล่าสุดและยกเลิกรายการค้าง', 'Refresh and discard pending changes')}
-                    </button>
-                    <button
-                      className="text-button"
-                      onClick={() =>
-                        download(
-                          'flowdesk-pending-backup.json',
-                          JSON.stringify(desk.backup(), null, 2),
-                          'application/json',
+          {page !== 'knowledge' && (
+            <div className="page-heading">
+              <div>
+                <h1>
+                  {page === 'overview' ? t('ยินดีต้อนรับ, ', 'Welcome, ') + user.name : pageTitle}
+                </h1>
+                <p>
+                  {page === 'overview'
+                    ? staff
+                      ? t(
+                          'งานที่ต้องรับผิดชอบและสิ่งที่ต้องติดตามต่อ',
+                          'Work and follow-ups that need your attention.',
                         )
-                      }
-                    >
-                      {t('สำรองรายการค้าง', 'Back up pending changes')}
-                    </button>
+                      : t(
+                          'ดูความคืบหน้าคำร้องของคุณ หรือเริ่มแจ้งปัญหาใหม่ได้ทันที',
+                          'Check your request progress or start a new support request.',
+                        )
+                    : descriptions[page]}
+                  {status === 'saved' &&
+                    !error &&
+                    desk.loadedAt &&
+                    !['knowledge', 'settings', 'users'].includes(page) && (
+                      <span className="heading-sync">
+                        <CheckCircle2 size={14} />
+                        {t('อัปเดต', 'Updated')}{' '}
+                        {desk.loadedAt.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'en-GB', {
+                          hour: '2-digit',
+                          minute: '2-digit',
+                          timeZone: 'Asia/Bangkok',
+                        })}
+                      </span>
+                    )}
+                </p>
+              </div>
+              <div className="page-actions">
+                {['reports', 'tickets', 'mine'].includes(page) && (
+                  <button className="secondary" disabled={!jobs.length} onClick={csv}>
+                    <Download size={19} />
+                    {t('ส่งออก CSV', 'Export CSV')}
+                  </button>
+                )}
+                {page === 'overview' && (
+                  <button className="text-button" onClick={() => go('knowledge')}>
+                    <BookOpen size={19} />
+                    {t('ค้นวิธีแก้ปัญหา', 'Find a guide')}
+                  </button>
+                )}
+                {!['settings', 'knowledge', 'users'].includes(page) && (
+                  <button
+                    className="secondary refresh-button"
+                    disabled={status !== 'saved'}
+                    onClick={() => desk.reload()}
+                  >
+                    <RefreshCw size={19} />
+                    {t('อัปเดตข้อมูล', 'Refresh')}
+                  </button>
+                )}
+                <button className="primary" onClick={() => newRequest()}>
+                  <Plus size={20} />
+                  {t('แจ้งปัญหา', 'New request')}
+                </button>
+              </div>
+            </div>
+          )}
+          {(status !== 'saved' || error) && (
+            <div
+              className={
+                'sync-status ' + (['error', 'conflict'].includes(status) ? 'has-error' : '')
+              }
+              role={error ? 'alert' : 'status'}
+            >
+              {status === 'loading' ? (
+                <>
+                  <Loader2 className="spin" size={18} />
+                  <span>{t('กำลังโหลดข้อมูลล่าสุด', 'Loading the latest data')}</span>
+                </>
+              ) : status === 'saving' ? (
+                <>
+                  <Loader2 className="spin" size={18} />
+                  <span>{t('กำลังบันทึกข้อมูล', 'Saving changes')}</span>
+                </>
+              ) : error ? (
+                <>
+                  <AlertCircle size={20} />
+                  <div>
+                    <p>{error}</p>
+                    <div className="notice-actions">
+                      {status !== 'conflict' && (
+                        <button className="secondary compact" onClick={() => desk.retry()}>
+                          {t('ลองอีกครั้ง', 'Try again')}
+                        </button>
+                      )}
+                      <button className="secondary compact" onClick={() => desk.reload()}>
+                        {t('โหลดล่าสุดและยกเลิกรายการค้าง', 'Refresh and discard pending changes')}
+                      </button>
+                      <button
+                        className="text-button"
+                        onClick={() =>
+                          download(
+                            'flowdesk-pending-backup.json',
+                            JSON.stringify(desk.backup(), null, 2),
+                            'application/json',
+                          )
+                        }
+                      >
+                        {t('สำรองรายการค้าง', 'Back up pending changes')}
+                      </button>
+                    </div>
                   </div>
-                </div>
-              </>
-            ) : (
-              <>
-                <CheckCircle2 size={18} />
-                <span>
-                  {t('ข้อมูลล่าสุด', 'Up to date')}
-                  {desk.loadedAt && (
-                    <span className="sync-time">
-                      {t('อัปเดต', 'Updated')}{' '}
-                      {desk.loadedAt.toLocaleTimeString(locale === 'th' ? 'th-TH' : 'en-GB', {
-                        hour: '2-digit',
-                        minute: '2-digit',
-                        timeZone: 'Asia/Bangkok',
-                      })}
-                    </span>
-                  )}
-                </span>
-                <span className="sync-scope">
-                  {staff
-                    ? t('คิวงานร่วมตามสิทธิ์บัญชี', 'Shared queue for your role')
-                    : t('เฉพาะคำร้องของคุณ', 'Your own requests')}
-                </span>
-              </>
-            )}
-          </div>
+                </>
+              ) : null}
+            </div>
+          )}
           <div className="page-content" key={page}>
             {page === 'overview' && (
               <>
-                <section className="overview-welcome">
-                  <div>
-                    <h2>
-                      {t('ยินดีต้อนรับ, ', 'Welcome, ')}
-                      {user.name}
-                    </h2>
-                    <p>
-                      {staff
-                        ? t(
-                            'ดูงานที่ต้องรับผิดชอบและสิ่งที่ต้องติดตามต่อได้ด้านล่าง',
-                            'Review the work and follow-ups that need your attention.',
-                          )
-                        : t(
-                            'ดูความคืบหน้าคำร้องของคุณ หรือเริ่มแจ้งปัญหาใหม่ได้ทันที',
-                            'Check your request progress or start a new support request.',
-                          )}
-                    </p>
-                  </div>
-                  <button className="text-button" onClick={() => go('knowledge')}>
-                    {t('ค้นวิธีแก้ปัญหา', 'Find a guide')}
-                    <BookOpen size={20} />
-                  </button>
-                </section>
                 <section className="summary-grid" aria-label={t('สรุปคำร้อง', 'Request summary')}>
                   {cardData.map((card, i) => (
                     <button
@@ -945,24 +946,6 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
             )}
             {['tickets', 'mine'].includes(page) && (
               <section className="panel queue-panel">
-                <div className="panel-heading">
-                  <div>
-                    <h2>
-                      {pageTitle}
-                      <span className="count-badge">{filtered.length}</span>
-                    </h2>
-                    <p>
-                      {t(
-                        'ค้นหาและกรองเพื่อเห็นเฉพาะงานที่ต้องการ',
-                        'Search and filter to focus on the work you need.',
-                      )}
-                    </p>
-                  </div>
-                  <button className="secondary" disabled={!jobs.length} onClick={csv}>
-                    <Download size={18} />
-                    {t('ส่งออก CSV', 'Export CSV')}
-                  </button>
-                </div>
                 <div className="list-toolbar">
                   <label className="search queue-search">
                     <Search size={21} />
@@ -1102,18 +1085,6 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
             )}
             {page === 'reports' && (
               <>
-                <div className="report-actions">
-                  <p>
-                    {t(
-                      'รายงานนี้ใช้ข้อมูลที่โหลดอยู่ในคิวงานของบัญชีคุณ',
-                      'This report uses the queue records currently available to your account.',
-                    )}
-                  </p>
-                  <button className="secondary" disabled={!jobs.length} onClick={csv}>
-                    <Download size={19} />
-                    {t('ส่งออก CSV', 'Export CSV')}
-                  </button>
-                </div>
                 <div className="report-grid">
                   <section className="panel report-panel">
                     <h2>{t('จำนวนคำร้องแยกตามสถานะ', 'Requests by status')}</h2>

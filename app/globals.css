@@ -1593,6 +1593,7 @@ dd {
 .knowledge-hero .eyebrow {
   color: var(--primary);
 }
+.knowledge-hero h1,
 .knowledge-hero h2 {
   font-size: 27px;
   margin: 9px 0;
@@ -2336,6 +2337,7 @@ dd {
   .knowledge-hero {
     padding: 22px;
   }
+  .knowledge-hero h1,
   .knowledge-hero h2 {
     font-size: 23px;
   }
@@ -2844,8 +2846,23 @@ dd {
   margin-top: 5px;
 }
 .audit-panel,
-.storage-panel {
+.storage-panel,
+.database-panel {
   padding: 25px;
+  min-width: 0;
+}
+.database-panel {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.database-panel .topic-icon {
+  display: inline-flex;
+}
+.database-panel h2 {
+  font-size: 18px;
+  margin: 6px 0 0;
 }
 .access-audit {
   list-style: none;
@@ -2863,12 +2880,14 @@ dd {
   color: var(--muted);
   margin-top: 6px;
 }
-.storage-panel > p {
+.storage-panel > p,
+.database-panel > p {
   font-size: 14px;
   color: var(--muted);
   margin: 20px 0;
 }
-.storage-panel > small {
+.storage-panel > small,
+.database-panel > small {
   display: block;
   font-size: 13px;
   color: var(--muted);
@@ -3419,5 +3438,42 @@ dd {
   }
   .attachment-grid {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+.database-panel > p {
+  margin: 4px 0;
+}
+.heading-sync {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  margin-left: 12px;
+  font-size: 13px;
+  color: var(--muted);
+  white-space: nowrap;
+  vertical-align: middle;
+}
+.heading-sync svg {
+  color: var(--primary);
+}
+@media (max-width: 760px) {
+  .heading-sync {
+    display: flex;
+    margin: 6px 0 0;
+  }
+}
+@media (max-width: 760px) {
+  .page-actions {
+    display: flex;
+    gap: 8px;
+    width: 100%;
+  }
+  .page-actions > button {
+    white-space: nowrap;
+    min-height: 44px;
+  }
+  .page-actions > .primary {
+    flex: 1;
+    justify-content: center;
   }
 }

@@ -173,7 +173,7 @@ export default function KnowledgeBase({
       <section className="knowledge-hero">
         <div>
           <span className="eyebrow">{t('คำตอบและคู่มือใช้งาน', 'ANSWERS & PRACTICAL GUIDES')}</span>
-          <h2>{t('ค้นวิธีแก้ปัญหา เริ่มจากตรงนี้', 'Find your next step here')}</h2>
+          <h1>{t('ค้นวิธีแก้ปัญหา เริ่มจากตรงนี้', 'Find your next step here')}</h1>
           <p>
             {t(
               'คู่มือเป็นขั้นตอนสำหรับการใช้งาน Flowdesk และปัญหา IT ที่พบบ่อย',

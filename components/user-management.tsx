@@ -36,7 +36,6 @@ export default function UserManagement({ onChanged }: { onChanged?: () => void }
     [busy, B] = useState(false),
     [error, E] = useState<{ message?: string; status?: number } | null>(null),
     [notice, N] = useState(false),
-    [provider, P] = useState('d1'),
     [change, C] = useState<Change | null>(null),
     [page, PG] = useState(1);
   async function load() {
@@ -50,7 +49,6 @@ export default function UserManagement({ onChanged }: { onChanged?: () => void }
       const data = (await r.json()) as {
         users: User[];
         audit: Log[];
-        database: { provider: string };
         error?: string;
       };
       if (!r.ok) {
@@ -59,7 +57,6 @@ export default function UserManagement({ onChanged }: { onChanged?: () => void }
       }
       U(data.users);
       A(data.audit);
-      P(data.database.provider);
     } catch {
       E({ status: 503 });
     } finally {
@@ -345,12 +342,12 @@ export default function UserManagement({ onChanged }: { onChanged?: () => void }
           <h2>{t('ฐานข้อมูลปัจจุบัน', 'Current database')}</h2>
           <span className="badge success">
             <i />
-            {provider === 'supabase' ? 'Supabase PostgreSQL' : 'Cloudflare D1'}
+            Supabase PostgreSQL
           </span>
           <p>
             {t(
-              'ตัวเชื่อมต่อ Supabase พร้อมสำหรับการตั้งค่าฝั่งเซิร์ฟเวอร์และย้ายข้อมูลในขั้นตอนส่งมอบ',
-              'The Supabase adapter is prepared for server configuration and data migration during handover.',
+              'ข้อมูลบัญชี คำร้อง และรูปที่แนบ จัดเก็บใน Supabase เข้าถึงผ่านเซิร์ฟเวอร์ของเว็บเท่านั้น',
+              'Accounts, requests and attached images are stored in Supabase and accessed only through the web server.',
             )}
           </p>
           <small>
