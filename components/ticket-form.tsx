@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import { Send, ShieldCheck, Loader2 } from 'lucide-react';
+import { Send, ShieldCheck, Loader2, ImagePlus, X } from 'lucide-react';
 import type { Job } from '../lib/helpdesk';
 import type { WebAccount } from './account-gate';
 import { useUi, categoryLabel, priorityLabel } from './ui-provider';
@@ -11,6 +11,7 @@ export function TicketForm({
   user,
   seed,
   onCreate,
+  onAttach,
   onRetry,
   onDone,
   status,
@@ -21,15 +22,19 @@ export function TicketForm({
   user: WebAccount;
   seed?: { key: number; title?: string; category?: string };
   onCreate: (job: Job) => Promise<Job | null>;
+  onAttach: (id: number, file: File) => Promise<string | null>;
   onRetry: () => Promise<Job | null>;
-  onDone: (job: Job) => void;
+  onDone: (job: Job, failedUploads: number) => void;
   status: string;
   error: string;
 }) {
   const { t, locale } = useUi();
   const form = useRef<HTMLFormElement>(null);
   const [title, T] = useState(''),
-    [category, C] = useState('อุปกรณ์');
+    [category, C] = useState('อุปกรณ์'),
+    [files, FL] = useState<File[]>([]),
+    [uploading, UP] = useState(''),
+    [uploadError, UE] = useState('');
   const saving = status === 'saving',
     pending = ['error', 'conflict'].includes(status);
   useEffect(() => {
@@ -38,15 +43,37 @@ export function TicketForm({
       C(seed.category || 'อุปกรณ์');
     }
   }, [seed?.key]);
-  function success(job: Job) {
+  async function success(job: Job) {
+    let failed = 0;
+    for (const [i, file] of files.entries()) {
+      UP(
+        t(`กำลังอัปโหลดรูป ${i + 1}/${files.length}…`, `Uploading image ${i + 1}/${files.length}…`),
+      );
+      if (await onAttach(job.id, file)) failed++;
+    }
+    UP('');
     form.current?.reset();
     T('');
     C('อุปกรณ์');
-    onDone(job);
+    FL([]);
+    UE('');
+    onDone(job, failed);
+  }
+  function pick(list: FileList | null) {
+    const chosen = Array.from(list || []).filter((f) => f.type.startsWith('image/'));
+    const next = [...files, ...chosen].slice(0, 5);
+    UE(
+      chosen.length < (list?.length || 0)
+        ? t('เลือกได้เฉพาะไฟล์รูปภาพ', 'Only image files can be attached.')
+        : files.length + chosen.length > 5
+          ? t('แนบได้สูงสุด 5 รูปตอนสร้างคำร้อง', 'Up to 5 images when creating a request.')
+          : '',
+    );
+    FL(next);
   }
   async function submit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
-    if (saving) return;
+    if (saving || uploading) return;
     if (pending) {
       const job = await onRetry();
       if (job) success(job);
@@ -109,7 +136,7 @@ export function TicketForm({
               )}
           </div>
         )}
-        <fieldset disabled={saving || pending} className="form-fields">
+        <fieldset disabled={saving || pending || Boolean(uploading)} className="form-fields">
           <label className="field">
             <span>
               {t('หัวข้อปัญหา', 'Subject')}{' '}
@@ -233,6 +260,44 @@ export function TicketForm({
               )}
             />
           </label>
+          <div className="field attach-field">
+            <span>{t('แนบรูป (ถ้ามี)', 'Images (optional)')}</span>
+            <label className="attach-picker">
+              <ImagePlus size={20} />
+              <span>
+                {t('เลือกรูป หรือถ่ายภาพหน้าจอ/อาการ', 'Choose images or take a photo')}
+                <small>
+                  {t('สูงสุด 5 รูป · PNG, JPG, WEBP, GIF', 'Up to 5 · PNG, JPG, WEBP, GIF')}
+                </small>
+              </span>
+              <input
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  pick(e.target.files);
+                  e.target.value = '';
+                }}
+              />
+            </label>
+            {uploadError && <small className="field-error">{uploadError}</small>}
+            {files.length > 0 && (
+              <ul className="attach-chips">
+                {files.map((f, i) => (
+                  <li key={f.name + i}>
+                    <span>{f.name}</span>
+                    <button
+                      type="button"
+                      aria-label={t('เอารูปนี้ออก', 'Remove image') + ' ' + f.name}
+                      onClick={() => FL(files.filter((_, j) => j !== i))}
+                    >
+                      <X size={15} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
         </fieldset>
         <div className="form-privacy">
           <ShieldCheck size={19} />
@@ -244,16 +309,27 @@ export function TicketForm({
           </p>
         </div>
         <div className="dialog-actions">
-          <button className="secondary" type="button" disabled={saving} onClick={onClose}>
+          <button
+            className="secondary"
+            type="button"
+            disabled={saving || Boolean(uploading)}
+            onClick={onClose}
+          >
             {t('ปิดไว้ก่อน', 'Close for now')}
           </button>
-          <button className="primary" type="submit" disabled={saving || status === 'loading'}>
-            {saving ? <Loader2 size={18} className="spin" /> : <Send size={18} />}{' '}
-            {saving
-              ? t('กำลังส่ง', 'Sending')
-              : pending
-                ? t('ลองส่งอีกครั้ง', 'Retry request')
-                : t('ส่งคำร้อง', 'Submit request')}
+          <button
+            className="primary"
+            type="submit"
+            disabled={saving || Boolean(uploading) || status === 'loading'}
+          >
+            {saving || uploading ? <Loader2 size={18} className="spin" /> : <Send size={18} />}{' '}
+            {uploading
+              ? uploading
+              : saving
+                ? t('กำลังส่ง', 'Sending')
+                : pending
+                  ? t('ลองส่งอีกครั้ง', 'Retry request')
+                  : t('ส่งคำร้อง', 'Submit request')}
           </button>
         </div>
         <p className="form-retention-note">

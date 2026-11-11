@@ -31,6 +31,20 @@ export const jobSchema = z.object({
   resolution: z.string().max(3000).optional(),
   rating: z.number().int().min(1).max(5).optional(),
   history: z.array(event).max(500).optional(),
+  attachments: z
+    .array(
+      z.object({
+        id: z.string(),
+        name: z.string().max(200),
+        type: z.string(),
+        size: z.number().int(),
+        at: z.string(),
+        by: z.string().max(80),
+        byId: z.string().optional(),
+      }),
+    )
+    .max(10)
+    .optional(),
   requesterId: z.string().optional(),
   assigneeId: z.string().nullable().optional(),
   revision: z.number().int().positive().optional(),

@@ -11,6 +11,7 @@ import {
   UserRound,
   History,
   Loader2,
+  ImagePlus,
 } from 'lucide-react';
 import type { Job } from '../lib/helpdesk';
 import type { Agent } from '../hooks/use-helpdesk';
@@ -48,6 +49,7 @@ export function TicketDetails({
   error,
   conflict,
   onUpdate,
+  onAttach,
   onRefresh,
   onRetry,
 }: {
@@ -62,6 +64,7 @@ export function TicketDetails({
   error: string;
   conflict: boolean;
   onUpdate: (id: number, patch: Partial<Job>, reason?: string) => Promise<boolean>;
+  onAttach: (id: number, file: File) => Promise<string | null>;
   onRefresh: () => Promise<void>;
   onRetry: () => Promise<Job | null>;
 }) {
@@ -71,6 +74,8 @@ export function TicketDetails({
     [reply, S] = useState(''),
     [rating, RT] = useState(5),
     [justSaved, JS] = useState(false),
+    [uploadMsg, UM] = useState(''),
+    [preview, PV] = useState<string | null>(null),
     wasSaving = useRef(false);
   useEffect(() => {
     A('');
@@ -288,6 +293,85 @@ export function TicketDetails({
             <h2>{t('รายละเอียดปัญหา', 'Issue description')}</h2>
             <p>{job.detail}</p>
           </section>
+          <section className="detail-attachments">
+            <div className="detail-attachments-head">
+              <h2>
+                {t('รูปที่แนบ', 'Images')}{' '}
+                <span className="count-pill">{job.attachments?.length || 0}</span>
+              </h2>
+              {!['ปิดงาน', 'ยกเลิก'].includes(job.status) &&
+                (job.attachments?.length || 0) < 10 && (
+                  <label
+                    className={'secondary compact attach-button' + (canEdit ? '' : ' disabled')}
+                  >
+                    <ImagePlus size={16} /> {t('แนบรูป', 'Add image')}
+                    <input
+                      type="file"
+                      accept="image/*"
+                      disabled={!canEdit}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        UM(t('กำลังอัปโหลด…', 'Uploading…'));
+                        const err = await onAttach(job.id, file);
+                        UM(err || t('แนบรูปแล้ว', 'Image attached.'));
+                        setTimeout(() => UM(''), 3000);
+                      }}
+                    />
+                  </label>
+                )}
+            </div>
+            {uploadMsg && (
+              <p className="upload-status" role="status">
+                {uploadMsg}
+              </p>
+            )}
+            {job.attachments?.length ? (
+              <ul className="attachment-grid">
+                {job.attachments.map((a) => {
+                  const src = `/api/tickets/${job.id}/attachments/${a.id}`;
+                  return (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onClick={() => PV(src)}
+                        aria-label={t('ดูรูป', 'View image') + ' ' + a.name}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt={a.name} loading="lazy" />
+                      </button>
+                      <small>
+                        {a.by} · {date(a.at)}
+                      </small>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="muted-text">
+                {t(
+                  'ยังไม่มีรูป แนบภาพหน้าจอหรือรูปอาการเพื่อช่วยให้ตรวจสอบได้เร็วขึ้น',
+                  'No images yet. A screenshot or photo helps IT diagnose faster.',
+                )}
+              </p>
+            )}
+          </section>
+          {preview && (
+            <div
+              className="image-lightbox"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('รูปขนาดเต็ม', 'Full-size image')}
+              onClick={() => PV(null)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="" />
+              <button type="button" className="icon-button" aria-label={t('ปิด', 'Close')}>
+                ✕
+              </button>
+            </div>
+          )}
           {job.resolution && (
             <section className="resolution-box">
               <CheckCircle2 size={23} />

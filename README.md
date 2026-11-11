@@ -17,6 +17,8 @@ npm run dev                  # http://localhost:3000
 2. SQL Editor → รัน `supabase/migrations/001_flowdesk.sql` แล้ว `002_ui_preferences.sql` (ครั้งเดียว ตามลำดับ)
 3. Project Settings → API Keys → คัดลอก Secret key (`sb_secret_…`) ไปใส่ `.env.local` / Vercel
 
+4. Storage → New bucket ชื่อ `flowdesk-attachments` ตั้งเป็น **Private**, จำกัดขนาด 4 MB, ชนิดไฟล์ `image/png, image/jpeg, image/webp, image/gif` (ใช้เก็บรูปที่แนบในคำร้อง)
+
 ตารางทั้งหมดขึ้นต้น `flowdesk_` เปิด RLS และไม่ให้สิทธิ์ browser — เว็บเข้าถึงผ่าน server ด้วย secret key เท่านั้น
 
 ## Deploy บน Vercel
@@ -37,6 +39,7 @@ npm run dev                  # http://localhost:3000
 
 ## บทบาท
 
+- **ทุกบทบาท:** แนบรูป (ภาพหน้าจอ/รูปอาการ) ได้สูงสุด 10 รูปต่อคำร้อง รูปเก็บใน bucket แบบ private และเปิดดูผ่านลิงก์ชั่วคราวหลังตรวจสิทธิ์
 - **พนักงาน:** สร้างและดูคำร้องของตัวเอง ส่งข้อความ ยกเลิก ยืนยันปิดงานพร้อมให้คะแนน หรือเปิดใหม่
 - **IT:** เห็นคิวรวม มอบหมายงาน อัปเดตสถานะ บันทึกวิธีแก้
 - **Admin:** ทุกอย่างของ IT + จัดการผู้ใช้ เปลี่ยนบทบาท ระงับบัญชี และดูประวัติการเปลี่ยนสิทธิ์
@@ -51,4 +54,5 @@ npm run dev                  # http://localhost:3000
 
 ```bash
 npm run test:store   # contract test ของ Supabase adapter
+npm run seed:demo    # สร้างบัญชีเดโมทุกบทบาท + คำร้องตัวอย่าง (รหัสผ่านอยู่ใน demo-accounts.txt)
 ```

@@ -1198,14 +1198,22 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
         user={user}
         seed={seed}
         onCreate={desk.create}
+        onAttach={desk.attach}
         onRetry={desk.retry}
         status={status}
         error={error}
-        onDone={(job) => {
+        onDone={(job, failed) => {
           C(false);
           go('tickets');
           S(job.id);
-          T(t('สร้างคำร้องสำเร็จ', 'Request created.'));
+          T(
+            failed
+              ? t(
+                  `สร้างคำร้องแล้ว แต่อัปโหลดรูปไม่สำเร็จ ${failed} รูป แนบใหม่ได้ในหน้ารายละเอียด`,
+                  `Request created, but ${failed} image(s) failed to upload. Attach them again from the details.`,
+                )
+              : t('สร้างคำร้องสำเร็จ', 'Request created.'),
+          );
         }}
       />
       <TicketDetails
@@ -1220,6 +1228,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
         error={error}
         conflict={status === 'conflict'}
         onUpdate={desk.mutate}
+        onAttach={desk.attach}
         onRefresh={desk.reload}
         onRetry={desk.retry}
       />
