@@ -3964,3 +3964,297 @@ textarea:focus {
   background: var(--s-new-bg);
   color: var(--s-new);
 }
+
+/* ============================================================
+   Motion layer — subtle, fast, and disabled by prefers-reduced-motion
+   (the global reduced-motion rule above turns all of this off)
+   ============================================================ */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --ease-spring: cubic-bezier(0.34, 1.4, 0.64, 1);
+}
+@keyframes fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes slide-in-right {
+  from {
+    transform: translateX(40px);
+    opacity: 0;
+  }
+  to {
+    transform: none;
+    opacity: 1;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: translateY(10px) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes float {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-6px);
+  }
+}
+@keyframes glow-drift {
+  0% {
+    transform: translate(-10%, -10%) scale(1);
+  }
+  50% {
+    transform: translate(10%, 6%) scale(1.15);
+  }
+  100% {
+    transform: translate(-10%, -10%) scale(1);
+  }
+}
+@keyframes toast-in {
+  from {
+    opacity: 0;
+    transform: translateY(16px) scale(0.96);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* Login / register page */
+.access-story {
+  position: relative;
+  overflow: hidden;
+}
+.access-story::before {
+  content: '';
+  position: absolute;
+  width: 520px;
+  height: 520px;
+  right: -160px;
+  top: -120px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgb(113 216 198 / 0.18), transparent 65%);
+  animation: glow-drift 14s ease-in-out infinite;
+  pointer-events: none;
+}
+.access-story > * {
+  position: relative;
+}
+.access-story-content > * {
+  animation: fade-up 0.7s var(--ease-out) both;
+}
+.access-story-content > *:nth-child(1) {
+  animation-delay: 0.05s;
+}
+.access-story-content > *:nth-child(2) {
+  animation-delay: 0.12s;
+}
+.access-story-content > *:nth-child(3) {
+  animation-delay: 0.2s;
+}
+.access-benefits > * {
+  animation: fade-up 0.6s var(--ease-out) both;
+}
+.access-benefits > *:nth-child(1) {
+  animation-delay: 0.3s;
+}
+.access-benefits > *:nth-child(2) {
+  animation-delay: 0.38s;
+}
+.access-benefits > *:nth-child(3) {
+  animation-delay: 0.46s;
+}
+.access-form {
+  animation: fade-up 0.6s var(--ease-out) 0.1s both;
+}
+.access-intro > :first-child {
+  animation: float 5s ease-in-out 1s infinite;
+}
+.auth-feedback {
+  animation: fade-in 0.3s ease both;
+}
+
+/* Page change: sections rise in with a short stagger */
+.page-content {
+  animation: none;
+}
+.page-content > * {
+  animation: fade-up 0.5s var(--ease-out) both;
+}
+.page-content > *:nth-child(2) {
+  animation-delay: 0.06s;
+}
+.page-content > *:nth-child(3) {
+  animation-delay: 0.12s;
+}
+.page-content > *:nth-child(4) {
+  animation-delay: 0.18s;
+}
+.page-heading {
+  animation: fade-in 0.35s ease both;
+}
+
+/* Overview cards: staggered pop */
+.summary-card {
+  animation: pop-in 0.5s var(--ease-out) both;
+}
+.summary-card:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.summary-card:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.summary-card:nth-child(4) {
+  animation-delay: 0.15s;
+}
+.summary-card > div > svg {
+  transition: transform 0.25s var(--ease-spring);
+}
+.summary-card:hover > div > svg {
+  transform: scale(1.1) rotate(-6deg);
+}
+
+/* Lists: rows slide in one after another (first 10) */
+.request-table tbody tr,
+.mobile-request,
+.knowledge-card,
+.followup-item {
+  animation: fade-up 0.4s var(--ease-out) both;
+}
+.request-table tbody tr:nth-child(2),
+.mobile-request:nth-child(2),
+.knowledge-card:nth-child(2) {
+  animation-delay: 0.03s;
+}
+.request-table tbody tr:nth-child(3),
+.mobile-request:nth-child(3),
+.knowledge-card:nth-child(3) {
+  animation-delay: 0.06s;
+}
+.request-table tbody tr:nth-child(4),
+.mobile-request:nth-child(4),
+.knowledge-card:nth-child(4) {
+  animation-delay: 0.09s;
+}
+.request-table tbody tr:nth-child(5),
+.mobile-request:nth-child(5),
+.knowledge-card:nth-child(5) {
+  animation-delay: 0.12s;
+}
+.request-table tbody tr:nth-child(6),
+.mobile-request:nth-child(6),
+.knowledge-card:nth-child(6) {
+  animation-delay: 0.15s;
+}
+.request-table tbody tr:nth-child(n + 7),
+.mobile-request:nth-child(n + 7),
+.knowledge-card:nth-child(n + 7) {
+  animation-delay: 0.18s;
+}
+.request-table tbody tr > td:last-child svg {
+  transition: transform 0.2s var(--ease-out);
+}
+.request-table tbody tr:hover > td:last-child svg {
+  transform: translateX(4px);
+}
+
+/* Dialogs: drawer slides from the right, centred dialogs pop */
+dialog[open].side-dialog {
+  animation: slide-in-right 0.35s var(--ease-out);
+}
+dialog[open].center-dialog {
+  animation: pop-in 0.3s var(--ease-out);
+}
+dialog[open]::backdrop {
+  animation: fade-in 0.25s ease;
+}
+.ticket-details > * {
+  animation: fade-up 0.45s var(--ease-out) both;
+}
+.ticket-details > *:nth-child(2) {
+  animation-delay: 0.05s;
+}
+.ticket-details > *:nth-child(3) {
+  animation-delay: 0.1s;
+}
+.ticket-details > *:nth-child(n + 4) {
+  animation-delay: 0.14s;
+}
+
+/* Small feedback */
+.toast {
+  animation: toast-in 0.35s var(--ease-spring) both;
+}
+.badge,
+.sla-chip {
+  transition:
+    background-color 0.25s,
+    color 0.25s;
+}
+.save-indicator {
+  animation: fade-in 0.2s ease both;
+}
+.nav-link svg {
+  transition: transform 0.2s var(--ease-out);
+}
+.nav-link:hover svg {
+  transform: translateX(2px);
+}
+.primary svg:last-child:not(:first-child) {
+  transition: transform 0.2s var(--ease-out);
+}
+.primary:hover:not(:disabled) svg:last-child:not(:first-child) {
+  transform: translateX(3px);
+}
+.switch span {
+  transition: transform 0.25s var(--ease-spring);
+}
+.attachment-grid img {
+  transition: transform 0.3s var(--ease-out);
+}
+.attachment-grid button:hover img {
+  transform: scale(1.05);
+}
+.image-lightbox {
+  animation: fade-in 0.2s ease;
+}
+.image-lightbox img {
+  animation: pop-in 0.3s var(--ease-out);
+}
+@keyframes grow-x {
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
+}
+.report-bar-row i {
+  transform-origin: left center;
+  animation: grow-x 0.8s var(--ease-out) 0.15s both;
+}
+.resolution-donut {
+  animation: pop-in 0.6s var(--ease-out) 0.1s both;
+}

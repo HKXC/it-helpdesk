@@ -47,6 +47,7 @@ import { TicketForm } from '../components/ticket-form';
 import { TicketDetails, StatusBadge } from '../components/ticket-details';
 import { Onboarding } from '../components/onboarding';
 import { SlaChip } from '../components/sla';
+import { CountUp } from '../components/count-up';
 import { formatDuration, SLA_TARGETS, slaBreached, slaOf } from '../lib/sla';
 import KnowledgeBase from '../components/knowledge-base';
 import UserManagement from '../components/user-management';
@@ -833,7 +834,13 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
                         <span>{card.label}</span>
                         <card.icon size={22} />
                       </div>
-                      <strong>{status === 'loading' && !jobs.length ? '—' : card.count}</strong>
+                      <strong>
+                        {status === 'loading' && !jobs.length ? (
+                          '—'
+                        ) : (
+                          <CountUp value={card.count} />
+                        )}
+                      </strong>
                       <footer>
                         <span>{card.hint}</span>
                         <ArrowUpRight size={18} />
