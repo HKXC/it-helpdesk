@@ -24,7 +24,7 @@ import {
   AlertCircle,
   MessageSquare,
   Download,
-  Headphones,
+  MonitorCog,
   Filter,
   ShieldCheck,
   Flag,
@@ -546,7 +546,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
             }}
           >
             <span className="brand-mark">
-              <Headphones size={25} />
+              <MonitorCog size={25} />
             </span>
             Flowdesk
           </a>

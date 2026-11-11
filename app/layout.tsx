@@ -4,6 +4,7 @@ import { UiProvider } from '../components/ui-provider';
 export const metadata: Metadata = {
   title: 'Flowdesk — IT Help Desk',
   description: 'แจ้งปัญหา ติดตามคำร้อง และดูแลทุกงาน IT ในองค์กร',
+  icons: { icon: '/favicon.svg' },
 };
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (

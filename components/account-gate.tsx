@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, type ReactNode } from 'react';
 import {
-  Headphones,
+  MonitorCog,
   ShieldCheck,
   ArrowRight,
   Eye,
@@ -90,7 +90,7 @@ export function AccountGate({
           <UiControls />
         </div>
         <span className="brand-mark">
-          <Headphones size={26} />
+          <MonitorCog size={26} />
         </span>
         {loading ? (
           <>
@@ -185,7 +185,7 @@ function AuthScreen({
       <section className="access-story">
         <a className="brand access-brand" href="/">
           <span className="brand-mark">
-            <Headphones size={26} />
+            <MonitorCog size={26} />
           </span>
           <span>Flowdesk</span>
         </a>
@@ -247,7 +247,7 @@ function AuthScreen({
         <div className="access-top">
           <a className="brand access-mobile-brand" href="/">
             <span className="brand-mark">
-              <Headphones size={23} />
+              <MonitorCog size={23} />
             </span>
             Flowdesk
           </a>
