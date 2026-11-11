@@ -1,6 +1,7 @@
 import { getAccount, response } from '../../../lib/account-auth';
 import { database, databaseInfo } from '../../../lib/database';
 import { migrateLegacy, ticketView } from '../../../lib/tickets';
+import { demoAccountIds, demoEnabled } from '../../../lib/demo';
 export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
@@ -25,7 +26,11 @@ export async function GET(request: Request) {
           version: Number(account.version),
         });
     }
-    const rows = await db.select('it_tickets', staff ? {} : { requester_id: user.id });
+    const hideDemo = !(await demoEnabled());
+    const demoIds = hideDemo ? await demoAccountIds() : new Set<string>();
+    const rows = (await db.select('it_tickets', staff ? {} : { requester_id: user.id })).filter(
+      (r) => !demoIds.has(String(r.requester_id)),
+    );
     const names = new Map(
       (await db.select('accounts', {}, ['id', 'name'], 5000)).map((a) => [
         String(a.id),
@@ -40,7 +45,9 @@ export async function GET(request: Request) {
       jobs,
       account: user.email,
       role: user.role,
-      agents: accounts.filter((a) => ['admin', 'it'].includes(String(a.role))),
+      agents: accounts.filter(
+        (a) => ['admin', 'it'].includes(String(a.role)) && !demoIds.has(String(a.id)),
+      ),
       database: user.role === 'admin' ? databaseInfo() : undefined,
     });
   } catch {

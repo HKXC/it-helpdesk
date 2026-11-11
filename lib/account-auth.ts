@@ -1,5 +1,6 @@
 import { digest, randomToken } from './passwords';
 import { database } from './database';
+import { demoEnabled, isDemoEmail } from './demo';
 export type Role = 'admin' | 'it' | 'employee';
 export type Account = {
   id: string;
@@ -50,6 +51,7 @@ export async function loadAccount(id: string): Promise<Account | null> {
     )
   )[0];
   if (!row || Number(row.active) !== 1) return null;
+  if (isDemoEmail(row.email) && !(await demoEnabled())) return null;
   if (id === process.env.ROOT_ADMIN_ID && row.role !== 'admin') {
     const changed = await db.patch(
       'accounts',

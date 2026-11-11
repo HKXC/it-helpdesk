@@ -17,6 +17,7 @@ import {
 import type { WebAccount } from './account-gate';
 import { useUi, roleLabel, type Theme } from './ui-provider';
 import { Dialog } from './dialog';
+import DemoSettings from './demo-settings';
 export default function AccountSettings({
   user,
   role,
@@ -300,6 +301,7 @@ export default function AccountSettings({
         </button>
         <small>{t('รวมถึงอุปกรณ์ที่กำลังใช้งานอยู่', 'This includes the current device.')}</small>
       </section>
+      {role === 'admin' && <DemoSettings />}
       <Dialog
         open={confirm}
         onClose={() => {

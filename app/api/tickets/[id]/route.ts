@@ -3,6 +3,7 @@ import { getAccount, readBody, response, sameOrigin } from '../../../../lib/acco
 import { database } from '../../../../lib/database';
 import { applyTicketPatch, patchSchema, PolicyError } from '../../../../lib/ticket-policy';
 import { ticketView } from '../../../../lib/tickets';
+import { hiddenDemoTicket } from '../../../../lib/demo';
 export const dynamic = 'force-dynamic';
 const inputSchema = z.object({
   revision: z.number().int().positive(),
@@ -33,7 +34,11 @@ export async function PATCH(request: Request) {
     if (!input.success) return response({ error: 'รูปแบบการแก้ไขไม่ถูกต้อง' }, 400);
     const db = database(),
       row = (await db.select('it_tickets', { id }, undefined, 1))[0];
-    if (!row || (user.role === 'employee' && row.requester_id !== user.id))
+    if (
+      !row ||
+      (user.role === 'employee' && row.requester_id !== user.id) ||
+      (await hiddenDemoTicket(row))
+    )
       return response({ error: 'ไม่พบคำร้อง' }, 404);
     const { patch, revision, reason } = input.data;
     if (Number(row.revision) !== revision)

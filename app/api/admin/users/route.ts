@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { z } from 'zod';
 import { getAccount, readBody, response, sameOrigin } from '../../../../lib/account-auth';
 import { database, databaseInfo } from '../../../../lib/database';
+import { demoEnabled, isDemoEmail } from '../../../../lib/demo';
 export const dynamic = 'force-dynamic';
 export async function GET(request: Request) {
   try {
@@ -18,11 +19,14 @@ export async function GET(request: Request) {
     const audit = (await db.select('role_audit', {}, undefined, 200))
       .sort((a, b) => Number(b.created_at) - Number(a.created_at))
       .slice(0, 50);
+    const hideDemo = !(await demoEnabled());
     return response({
-      users: users.map((u) => ({
-        ...u,
-        protected: u.id === process.env.ROOT_ADMIN_ID || u.id === actor.id,
-      })),
+      users: users
+        .filter((u) => !hideDemo || !isDemoEmail(u.email))
+        .map((u) => ({
+          ...u,
+          protected: u.id === process.env.ROOT_ADMIN_ID || u.id === actor.id,
+        })),
       audit,
       database: databaseInfo(),
     });

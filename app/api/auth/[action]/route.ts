@@ -12,6 +12,7 @@ import {
   sameOrigin,
   sessionCookie,
 } from '../../../../lib/account-auth';
+import { demoEnabled, isDemoEmail } from '../../../../lib/demo';
 import {
   dummyHash,
   hashPassword,
@@ -146,6 +147,8 @@ export async function POST(request: Request) {
       });
     if (action === 'register') {
       const reg = signup.parse(data);
+      if (isDemoEmail(reg.email))
+        return response({ error: 'โดเมนอีเมลนี้สงวนไว้สำหรับข้อมูลจำลอง' }, 400);
       const id = 'account:' + randomUUID();
       const encoded = await hashPassword(reg.password);
       const result = await db.insert(
@@ -186,6 +189,8 @@ export async function POST(request: Request) {
     const valid = await verifyPassword(input.password, String(row?.password_hash || dummyHash));
     if (!row || !valid || Number(row.active) !== 1)
       return response({ error: 'อีเมลหรือรหัสผ่านไม่ถูกต้อง' }, 401);
+    if (isDemoEmail(row.email) && !(await demoEnabled()))
+      return response({ error: 'บัญชีจำลองถูกปิดใช้งานแล้ว กรุณาเข้าสู่ระบบด้วยบัญชีจริง' }, 403);
     const user = await loadAccount(String(row.id));
     return response({ user }, 200, {
       'Set-Cookie': await createSession(request, String(row.id), Boolean(input.remember)),

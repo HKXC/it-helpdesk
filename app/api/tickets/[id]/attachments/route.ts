@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { getAccount, response, sameOrigin } from '../../../../../lib/account-auth';
 import { database } from '../../../../../lib/database';
 import { ticketView } from '../../../../../lib/tickets';
+import { hiddenDemoTicket } from '../../../../../lib/demo';
 import {
   IMAGE_TYPES,
   MAX_ATTACHMENTS,
@@ -26,7 +27,11 @@ export async function POST(request: Request) {
     if (!Number.isSafeInteger(id) || id < 1) return response({ error: 'ไม่พบคำร้อง' }, 404);
     const db = database(),
       row = (await db.select('it_tickets', { id }, undefined, 1))[0];
-    if (!row || (user.role === 'employee' && row.requester_id !== user.id))
+    if (
+      !row ||
+      (user.role === 'employee' && row.requester_id !== user.id) ||
+      (await hiddenDemoTicket(row))
+    )
       return response({ error: 'ไม่พบคำร้อง' }, 404);
     const job = await ticketView(row);
     if (['ปิดงาน', 'ยกเลิก'].includes(job.status))

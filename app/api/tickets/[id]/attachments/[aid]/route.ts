@@ -1,6 +1,7 @@
 import { getAccount, response } from '../../../../../../lib/account-auth';
 import { database } from '../../../../../../lib/database';
 import { ticketView } from '../../../../../../lib/tickets';
+import { hiddenDemoTicket } from '../../../../../../lib/demo';
 import { IMAGE_TYPES, signedUrl } from '../../../../../../lib/storage';
 export const dynamic = 'force-dynamic';
 
@@ -15,7 +16,11 @@ export async function GET(request: Request) {
     if (!Number.isSafeInteger(id) || id < 1 || !/^[0-9a-f-]{36}$/.test(aid))
       return response({ error: 'ไม่พบไฟล์' }, 404);
     const row = (await database().select('it_tickets', { id }, undefined, 1))[0];
-    if (!row || (user.role === 'employee' && row.requester_id !== user.id))
+    if (
+      !row ||
+      (user.role === 'employee' && row.requester_id !== user.id) ||
+      (await hiddenDemoTicket(row))
+    )
       return response({ error: 'ไม่พบไฟล์' }, 404);
     const job = await ticketView(row);
     const file = job.attachments?.find((a) => a.id === aid);
