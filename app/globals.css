@@ -3483,3 +3483,243 @@ dd {
 .workflow-actions:empty {
   display: none;
 }
+
+/* ============================================================
+   Visual polish layer — refines the existing look, both themes
+   ============================================================ */
+:root {
+  --radius: 14px;
+  --shadow-sm: 0 1px 2px #17283c0d, 0 1px 3px #17283c0a;
+  --shadow-md: 0 6px 20px #17283c14;
+  --ring: 0 0 0 3px color-mix(in srgb, var(--primary) 25%, transparent);
+  --s-new-bg: #e8f0ff;
+  --s-new: #1f4fb4;
+  --s-prog-bg: #efe9ff;
+  --s-prog: #5b3cc4;
+  --s-wait-bg: #fff2d6;
+  --s-wait: #8a5300;
+  --s-done-bg: #e1f5ea;
+  --s-done: #136b40;
+  --s-closed-bg: #eceff3;
+  --s-closed: #46586d;
+  --s-cancel-bg: #fbe8eb;
+  --s-cancel: #9c2b3b;
+  --c-amber: #b26b00;
+  --c-amber-bg: #fff3dc;
+  --c-blue: #2557c7;
+  --c-blue-bg: #e8efff;
+  --c-violet: #6340d0;
+  --c-violet-bg: #f0eaff;
+}
+[data-theme='dark'] {
+  --shadow-sm: 0 1px 2px #0005;
+  --shadow-md: 0 8px 24px #0006;
+  --s-new-bg: #1d3157;
+  --s-new: #a9c5ff;
+  --s-prog-bg: #2d2552;
+  --s-prog: #cdbcff;
+  --s-wait-bg: #3d2f12;
+  --s-wait: #f6cb7c;
+  --s-done-bg: #173b2c;
+  --s-done: #8fe0b5;
+  --s-closed-bg: #263547;
+  --s-closed: #b5c5d9;
+  --s-cancel-bg: #45202a;
+  --s-cancel: #ffabb3;
+  --c-amber: #f6cb7c;
+  --c-amber-bg: #3d2f12;
+  --c-blue: #a9c5ff;
+  --c-blue-bg: #1d3157;
+  --c-violet: #cdbcff;
+  --c-violet-bg: #2d2552;
+}
+
+/* Surfaces: soft depth instead of heavy borders */
+.panel,
+.summary-card,
+.knowledge-card,
+.detail-management {
+  box-shadow: var(--shadow-sm);
+}
+.panel {
+  border-radius: var(--radius);
+}
+
+/* Buttons: smoother feedback and visible keyboard focus */
+.primary,
+.secondary,
+.icon-button,
+.nav-link,
+.summary-card,
+.text-button {
+  transition:
+    background-color 0.15s,
+    border-color 0.15s,
+    box-shadow 0.15s,
+    transform 0.15s,
+    color 0.15s;
+}
+.primary:active:not(:disabled),
+.secondary:active:not(:disabled) {
+  transform: translateY(1px);
+}
+.secondary:hover:not(:disabled) {
+  border-color: color-mix(in srgb, var(--primary) 45%, var(--border));
+}
+:is(button, a, select, input, textarea, summary):focus-visible {
+  outline: none;
+  box-shadow: var(--ring);
+}
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: var(--primary);
+}
+
+/* Sidebar: active item gets an accent bar */
+.nav-link {
+  position: relative;
+}
+.nav-link.selected::before {
+  content: '';
+  position: absolute;
+  left: -6px;
+  top: 12px;
+  bottom: 12px;
+  width: 3px;
+  border-radius: 3px;
+  background: var(--primary);
+}
+
+/* Summary cards: icon chips with a colour per metric */
+.summary-card {
+  position: relative;
+  overflow: hidden;
+  border-radius: var(--radius);
+}
+.summary-card > div {
+  align-items: center;
+  color: var(--muted);
+}
+.summary-card > div > svg {
+  box-sizing: content-box;
+  padding: 9px;
+  border-radius: 10px;
+  background: var(--tint);
+  color: var(--primary);
+}
+.summary-card > strong {
+  font-size: 40px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.2;
+  margin: 14px 0 10px;
+}
+.summary-card:hover {
+  box-shadow: var(--shadow-md);
+}
+.summary-card:nth-child(4n + 1) > div > svg {
+  background: var(--c-amber-bg);
+  color: var(--c-amber);
+}
+.summary-card:nth-child(4n + 2) > div > svg {
+  background: var(--tint);
+  color: var(--primary);
+}
+.summary-card:nth-child(4n + 3) > div > svg {
+  background: var(--c-blue-bg);
+  color: var(--c-blue);
+}
+.summary-card:nth-child(4n + 4) > div > svg {
+  background: var(--c-violet-bg);
+  color: var(--c-violet);
+}
+
+/* Status badges: pill shape, distinct colour per status, dark-mode aware */
+.badge {
+  border-radius: 999px;
+  padding: 4px 11px;
+}
+.badge.new,
+.badge.open {
+  background: var(--s-new-bg);
+  color: var(--s-new);
+}
+.badge.progress,
+.badge.working {
+  background: var(--s-prog-bg);
+  color: var(--s-prog);
+}
+.badge.waiting {
+  background: var(--s-wait-bg);
+  color: var(--s-wait);
+}
+.badge.resolved,
+.badge.success {
+  background: var(--s-done-bg);
+  color: var(--s-done);
+}
+.badge.closed,
+.badge.neutral,
+.badge.muted {
+  background: var(--s-closed-bg);
+  color: var(--s-closed);
+}
+.badge.cancelled {
+  background: var(--s-cancel-bg);
+  color: var(--s-cancel);
+}
+.priority-label.urgent {
+  font-weight: 600;
+}
+
+/* Tables and lists: clear row hover */
+.request-table tbody tr,
+.mobile-request {
+  transition: background-color 0.12s;
+}
+.request-table tbody tr:hover,
+.mobile-request:hover {
+  background: color-mix(in srgb, var(--primary) 5%, var(--surface));
+}
+.request-table tbody tr:hover .request-subject strong,
+.request-table tbody tr:hover h3 {
+  color: var(--primary);
+}
+.request-category-icon {
+  border-radius: 10px;
+  background: var(--tint);
+  color: var(--primary);
+}
+
+/* Ticket details: calmer section rhythm */
+.ticket-details-heading h1 {
+  letter-spacing: -0.01em;
+}
+.detail-management,
+.resolution-box,
+.closure-box {
+  border-radius: 12px;
+}
+.conversation-section,
+.detail-attachments,
+.detail-description {
+  scroll-margin-top: 80px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .summary-card:hover,
+  .primary:active:not(:disabled),
+  .secondary:active:not(:disabled) {
+    transform: none;
+  }
+}
+.badge.info {
+  background: var(--s-prog-bg);
+  color: var(--s-prog);
+}
+.badge.warning {
+  background: var(--s-wait-bg);
+  color: var(--s-wait);
+}

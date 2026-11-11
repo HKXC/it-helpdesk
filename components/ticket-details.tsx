@@ -21,15 +21,16 @@ import { useUi, statusLabel, categoryLabel, priorityLabel, historyLabel } from '
 export function StatusBadge({ value }: { value: string }) {
   const { locale } = useUi();
   const tone =
-    value === 'กำลังดำเนินการ'
-      ? 'info'
-      : value === 'รอข้อมูล'
-        ? 'warning'
-        : ['แก้ไขแล้ว', 'ปิดงาน'].includes(value)
-          ? 'success'
-          : value === 'ยกเลิก'
-            ? 'muted'
-            : 'neutral';
+    (
+      {
+        เปิดใหม่: 'new',
+        กำลังดำเนินการ: 'progress',
+        รอข้อมูล: 'waiting',
+        แก้ไขแล้ว: 'resolved',
+        ปิดงาน: 'closed',
+        ยกเลิก: 'cancelled',
+      } as Record<string, string>
+    )[value] || 'neutral';
   return (
     <span className={'badge ' + tone}>
       <i />
