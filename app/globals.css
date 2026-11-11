@@ -3477,3 +3477,9 @@ dd {
     justify-content: center;
   }
 }
+.detail-management + .workflow-actions {
+  margin: -8px 0 25px;
+}
+.workflow-actions:empty {
+  display: none;
+}

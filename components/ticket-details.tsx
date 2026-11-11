@@ -152,7 +152,7 @@ export function TicketDetails({
             <p>
               <UserRound size={17} />
               {job.person}
-              <span>·</span>
+              <span aria-hidden="true"> · </span>
               {job.department || t('ไม่ระบุแผนก', 'Department not specified')}
             </p>
             <small>
@@ -289,89 +289,6 @@ export function TicketDetails({
               </div>
             </dl>
           </section>
-          <section className="detail-description">
-            <h2>{t('รายละเอียดปัญหา', 'Issue description')}</h2>
-            <p>{job.detail}</p>
-          </section>
-          <section className="detail-attachments">
-            <div className="detail-attachments-head">
-              <h2>
-                {t('รูปที่แนบ', 'Images')}{' '}
-                <span className="count-pill">{job.attachments?.length || 0}</span>
-              </h2>
-              {!['ปิดงาน', 'ยกเลิก'].includes(job.status) &&
-                (job.attachments?.length || 0) < 10 && (
-                  <label
-                    className={'secondary compact attach-button' + (canEdit ? '' : ' disabled')}
-                  >
-                    <ImagePlus size={16} /> {t('แนบรูป', 'Add image')}
-                    <input
-                      type="file"
-                      accept="image/*"
-                      disabled={!canEdit}
-                      onChange={async (e) => {
-                        const file = e.target.files?.[0];
-                        e.target.value = '';
-                        if (!file) return;
-                        UM(t('กำลังอัปโหลด…', 'Uploading…'));
-                        const err = await onAttach(job.id, file);
-                        UM(err || t('แนบรูปแล้ว', 'Image attached.'));
-                        setTimeout(() => UM(''), 3000);
-                      }}
-                    />
-                  </label>
-                )}
-            </div>
-            {uploadMsg && (
-              <p className="upload-status" role="status">
-                {uploadMsg}
-              </p>
-            )}
-            {job.attachments?.length ? (
-              <ul className="attachment-grid">
-                {job.attachments.map((a) => {
-                  const src = `/api/tickets/${job.id}/attachments/${a.id}`;
-                  return (
-                    <li key={a.id}>
-                      <button
-                        type="button"
-                        onClick={() => PV(src)}
-                        aria-label={t('ดูรูป', 'View image') + ' ' + a.name}
-                      >
-                        {/* eslint-disable-next-line @next/next/no-img-element */}
-                        <img src={src} alt={a.name} loading="lazy" />
-                      </button>
-                      <small>
-                        {a.by} · {date(a.at)}
-                      </small>
-                    </li>
-                  );
-                })}
-              </ul>
-            ) : (
-              <p className="muted-text">
-                {t(
-                  'ยังไม่มีรูป แนบภาพหน้าจอหรือรูปอาการเพื่อช่วยให้ตรวจสอบได้เร็วขึ้น',
-                  'No images yet. A screenshot or photo helps IT diagnose faster.',
-                )}
-              </p>
-            )}
-          </section>
-          {preview && (
-            <div
-              className="image-lightbox"
-              role="dialog"
-              aria-modal="true"
-              aria-label={t('รูปขนาดเต็ม', 'Full-size image')}
-              onClick={() => PV(null)}
-            >
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={preview} alt="" />
-              <button type="button" className="icon-button" aria-label={t('ปิด', 'Close')}>
-                ✕
-              </button>
-            </div>
-          )}
           {job.resolution && (
             <section className="resolution-box">
               <CheckCircle2 size={23} />
@@ -381,7 +298,46 @@ export function TicketDetails({
               </div>
             </section>
           )}
-          <div className="workflow-actions">
+          {own && job.status === 'แก้ไขแล้ว' && (
+            <form
+              className="closure-box"
+              onSubmit={async (e) => {
+                e.preventDefault();
+                await onUpdate(job.id, { status: 'ปิดงาน', rating });
+              }}
+            >
+              <h2>{t('ทดสอบแล้ว ใช้งานได้ตามปกติหรือไม่?', 'Have you tested the result?')}</h2>
+              <p>
+                {t(
+                  'หากปัญหาได้รับการแก้ไขแล้ว ให้คะแนนและยืนยันปิดงาน',
+                  'If the issue is resolved, rate the service and confirm closure.',
+                )}
+              </p>
+              <fieldset className="rating-options">
+                <legend>{t('ความพึงพอใจ', 'Service rating')}</legend>
+                {[1, 2, 3, 4, 5].map((value) => (
+                  <label key={value} className={value <= rating ? 'selected' : ''}>
+                    <input
+                      type="radio"
+                      name="rating"
+                      value={value}
+                      checked={rating === value}
+                      onChange={() => RT(value)}
+                      aria-label={value + ' / 5'}
+                      disabled={!canEdit}
+                    />
+                    <Star size={25} fill={value <= rating ? 'currentColor' : 'none'} />
+                  </label>
+                ))}
+                <span>{rating} / 5</span>
+              </fieldset>
+              <button className="primary" disabled={!canEdit}>
+                <CheckCircle2 size={18} />
+                {t('ยืนยันปิดงาน', 'Confirm closure')}
+              </button>
+            </form>
+          )}
+          <div className="workflow-actions" hidden={Boolean(action)}>
             {staff && !terminal && (
               <button
                 className="primary"
@@ -466,44 +422,83 @@ export function TicketDetails({
               </div>
             </form>
           )}
-          {own && job.status === 'แก้ไขแล้ว' && (
-            <form
-              className="closure-box"
-              onSubmit={async (e) => {
-                e.preventDefault();
-                await onUpdate(job.id, { status: 'ปิดงาน', rating });
-              }}
-            >
-              <h2>{t('ทดสอบแล้ว ใช้งานได้ตามปกติหรือไม่?', 'Have you tested the result?')}</h2>
-              <p>
-                {t(
-                  'หากปัญหาได้รับการแก้ไขแล้ว ให้คะแนนและยืนยันปิดงาน',
-                  'If the issue is resolved, rate the service and confirm closure.',
-                )}
-              </p>
-              <fieldset className="rating-options">
-                <legend>{t('ความพึงพอใจ', 'Service rating')}</legend>
-                {[1, 2, 3, 4, 5].map((value) => (
-                  <label key={value} className={value <= rating ? 'selected' : ''}>
+          <section className="detail-description">
+            <h2>{t('รายละเอียดปัญหา', 'Issue description')}</h2>
+            <p>{job.detail}</p>
+          </section>
+          <section className="detail-attachments">
+            <div className="detail-attachments-head">
+              <h2>
+                {t('รูปที่แนบ', 'Images')}{' '}
+                <span className="count-pill">{job.attachments?.length || 0}</span>
+              </h2>
+              {!['ปิดงาน', 'ยกเลิก'].includes(job.status) &&
+                (job.attachments?.length || 0) < 10 && (
+                  <label
+                    className={'secondary compact attach-button' + (canEdit ? '' : ' disabled')}
+                  >
+                    <ImagePlus size={16} /> {t('แนบรูป', 'Add image')}
                     <input
-                      type="radio"
-                      name="rating"
-                      value={value}
-                      checked={rating === value}
-                      onChange={() => RT(value)}
-                      aria-label={value + ' / 5'}
+                      type="file"
+                      accept="image/*"
                       disabled={!canEdit}
+                      onChange={async (e) => {
+                        const file = e.target.files?.[0];
+                        e.target.value = '';
+                        if (!file) return;
+                        UM(t('กำลังอัปโหลด…', 'Uploading…'));
+                        const err = await onAttach(job.id, file);
+                        UM(err || t('แนบรูปแล้ว', 'Image attached.'));
+                        setTimeout(() => UM(''), 3000);
+                      }}
                     />
-                    <Star size={25} fill={value <= rating ? 'currentColor' : 'none'} />
                   </label>
-                ))}
-                <span>{rating} / 5</span>
-              </fieldset>
-              <button className="primary" disabled={!canEdit}>
-                <CheckCircle2 size={18} />
-                {t('ยืนยันปิดงาน', 'Confirm closure')}
+                )}
+            </div>
+            {uploadMsg && (
+              <p className="upload-status" role="status">
+                {uploadMsg}
+              </p>
+            )}
+            {job.attachments?.length ? (
+              <ul className="attachment-grid">
+                {job.attachments.map((a) => {
+                  const src = `/api/tickets/${job.id}/attachments/${a.id}`;
+                  return (
+                    <li key={a.id}>
+                      <button
+                        type="button"
+                        onClick={() => PV(src)}
+                        aria-label={t('ดูรูป', 'View image') + ' ' + a.name}
+                      >
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={src} alt={a.name} loading="lazy" />
+                      </button>
+                      <small>
+                        {a.by} · {date(a.at)}
+                      </small>
+                    </li>
+                  );
+                })}
+              </ul>
+            ) : (
+              <p className="muted-text">{t('ยังไม่มีรูปที่แนบ', 'No images attached.')}</p>
+            )}
+          </section>
+          {preview && (
+            <div
+              className="image-lightbox"
+              role="dialog"
+              aria-modal="true"
+              aria-label={t('รูปขนาดเต็ม', 'Full-size image')}
+              onClick={() => PV(null)}
+            >
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img src={preview} alt="" />
+              <button type="button" className="icon-button" aria-label={t('ปิด', 'Close')}>
+                ✕
               </button>
-            </form>
+            </div>
           )}
           {job.rating && (
             <p className="rating-result">
