@@ -232,13 +232,27 @@ export function TicketDetails({
                     <option value="">{t('ยังไม่มอบหมาย', 'Unassigned')}</option>
                     {agents.map((agent) => (
                       <option key={agent.id} value={agent.id}>
-                        {agent.name}
+                        {agent.id === user.id
+                          ? agent.name + ' ' + t('(ฉัน)', '(me)')
+                          : agent.email
+                            ? agent.name + ' · ' + agent.email
+                            : agent.name}
                       </option>
                     ))}
                     {job.assigneeId && !agents.some((a) => a.id === job.assigneeId) && (
                       <option value={job.assigneeId}>{job.agent}</option>
                     )}
                   </select>
+                  {!terminal && job.assigneeId !== user.id && (
+                    <button
+                      type="button"
+                      className="secondary compact claim-button"
+                      disabled={!canEdit}
+                      onClick={() => onUpdate(job.id, { assigneeId: user.id })}
+                    >
+                      <UserRound size={16} /> {t('รับงานนี้', 'Assign to me')}
+                    </button>
+                  )}
                 </label>
               ) : (
                 <div className="read-field">

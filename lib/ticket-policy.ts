@@ -37,6 +37,10 @@ export function applyTicketPatch(
     if (!staff) throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่มอบหมายงานได้');
     next.assigneeId = patch.assigneeId;
     event = 'เปลี่ยนผู้รับผิดชอบ';
+    if (patch.assigneeId && job.status === 'เปิดใหม่') {
+      next.status = 'กำลังดำเนินการ';
+      event = 'รับเรื่องและเปลี่ยนสถานะเป็น กำลังดำเนินการ';
+    }
   } else if (keys.length === 1 && patch.comments) {
     if (
       patch.comments.length !== job.comments.length + 1 ||

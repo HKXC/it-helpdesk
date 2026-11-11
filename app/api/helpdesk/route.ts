@@ -34,7 +34,7 @@ export async function GET(request: Request) {
     );
     const jobs = await Promise.all(rows.map((row) => ticketView(row, names)));
     const accounts = staff
-      ? await db.select('accounts', { active: 1 }, ['id', 'name', 'role'], 500)
+      ? await db.select('accounts', { active: 1 }, ['id', 'name', 'role', 'email'], 500)
       : [];
     return response({
       jobs,

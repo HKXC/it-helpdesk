@@ -341,7 +341,33 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
     );
     T(t('ส่งออกข้อมูลที่กรองไว้แล้ว', 'Filtered requests exported.'));
   }
-  const cardData = [
+  const staffCards = [
+    {
+      label: t('ยังไม่มอบหมาย', 'Unassigned'),
+      count: jobs.filter((j) => isActive(j) && !j.assigneeId).length,
+      icon: AlertCircle,
+      filter: 'active',
+      assign: 'unassigned',
+      hint: t('รอคนรับเรื่อง', 'Waiting for someone to pick up'),
+    },
+    {
+      label: t('งานของฉัน', 'My active work'),
+      count: jobs.filter((j) => isActive(j) && j.assigneeId === user.id).length,
+      icon: UserCheck,
+      filter: 'active',
+      assign: 'mine',
+      hint: t('งานที่มอบหมายให้คุณและยังไม่เสร็จ', 'Assigned to you and still open'),
+    },
+  ];
+  const cardData: {
+    label: string;
+    count: number;
+    icon: typeof Ticket;
+    filter: string;
+    assign?: string;
+    hint: string;
+  }[] = [
+    ...(staff ? staffCards : []),
     {
       label: t('คำร้องทั้งหมด', 'All requests'),
       count: jobs.length,
@@ -370,7 +396,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
       filter: 'ปิดงาน',
       hint: t('ผู้แจ้งยืนยันผลแล้ว', 'Confirmed by the requester'),
     },
-  ];
+  ].filter((card) => !staff || !['all', 'ปิดงาน'].includes(card.filter));
   function ticketList() {
     return (
       <>
@@ -780,9 +806,9 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
                 <section className="summary-grid" aria-label={t('สรุปคำร้อง', 'Request summary')}>
                   {cardData.map((card, i) => (
                     <button
-                      key={card.filter}
+                      key={card.label}
                       className="summary-card"
-                      onClick={() => openRequests(card.filter)}
+                      onClick={() => openRequests(card.filter, card.assign)}
                       style={{ animationDelay: i * 35 + 'ms' }}
                     >
                       <div>

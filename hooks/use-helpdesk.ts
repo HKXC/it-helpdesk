@@ -1,7 +1,7 @@
 'use client';
 import { useState, useEffect, useRef, useCallback } from 'react';
 import type { Job } from '../lib/helpdesk';
-export type Agent = { id: string; name: string; role: string };
+export type Agent = { id: string; name: string; role: string; email?: string };
 type Status = 'loading' | 'saved' | 'saving' | 'error' | 'conflict';
 type Reply = {
   jobs: Job[];

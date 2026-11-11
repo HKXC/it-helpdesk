@@ -3189,3 +3189,10 @@ dd {
 .request-form :is(input, select, textarea) {
   scroll-margin-block: 96px;
 }
+.claim-button {
+  margin-top: 8px;
+  align-self: flex-start;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
