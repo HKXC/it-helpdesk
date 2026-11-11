@@ -121,6 +121,11 @@ export function applyTicketPatch(
   if ((job.history?.length || 0) >= 500) throw new PolicyError('ประวัติคำร้องถึงขีดจำกัดแล้ว', 400);
   const at = new Date().toISOString();
   next.updatedAt = at;
+  // SLA timestamps: first IT action, and when the ticket was marked resolved.
+  if (staff && !own && !next.firstResponseAt) next.firstResponseAt = at;
+  if (next.status === 'แก้ไขแล้ว' && job.status !== 'แก้ไขแล้ว') next.resolvedAt = at;
+  if (next.status === 'เปิดใหม่' && ['แก้ไขแล้ว', 'ปิดงาน'].includes(job.status))
+    delete next.resolvedAt;
   next.history = [...(job.history || []), { at, actor: actor.name, text: event }];
   return next;
 }

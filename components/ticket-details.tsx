@@ -17,6 +17,7 @@ import type { Job } from '../lib/helpdesk';
 import type { Agent } from '../hooks/use-helpdesk';
 import type { WebAccount } from './account-gate';
 import { Dialog } from './dialog';
+import { SlaPanel } from './sla';
 import { useUi, statusLabel, categoryLabel, priorityLabel, historyLabel } from './ui-provider';
 export function StatusBadge({ value }: { value: string }) {
   const { locale } = useUi();
@@ -289,6 +290,7 @@ export function TicketDetails({
                 <dd>{job.contact || '—'}</dd>
               </div>
             </dl>
+            <SlaPanel job={job} />
           </section>
           {job.resolution && (
             <section className="resolution-box">

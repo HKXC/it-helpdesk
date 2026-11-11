@@ -3832,3 +3832,125 @@ textarea:focus {
     flex: none;
   }
 }
+/* SLA */
+.sla-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 9px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+  background: var(--s-closed-bg);
+  color: var(--s-closed);
+}
+.sla-chip.met,
+.sla-chip.ok {
+  background: var(--s-done-bg);
+  color: var(--s-done);
+}
+.sla-chip.warning {
+  background: var(--s-wait-bg);
+  color: var(--s-wait);
+}
+.sla-chip.breached,
+.sla-chip.missed {
+  background: var(--s-cancel-bg);
+  color: var(--s-cancel);
+}
+.request-table td .sla-chip {
+  margin-top: 6px;
+}
+.mobile-request-badges {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+}
+.sla-panel {
+  margin-top: 18px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+  display: grid;
+  gap: 12px;
+}
+.sla-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0;
+  font-size: 15px;
+}
+.sla-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+.sla-row strong {
+  display: block;
+  font-size: 14px;
+}
+.sla-row small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.sla-report {
+  margin-top: 22px;
+}
+.sla-report-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 14px;
+  margin: 16px 0 20px;
+}
+.sla-report-grid > div {
+  padding: 16px 18px;
+  border-radius: 12px;
+  background: var(--subtle);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.sla-report-grid span,
+.sla-report-grid small {
+  color: var(--muted);
+  font-size: 13px;
+}
+.sla-report-grid strong {
+  font-size: 30px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+}
+.sla-report-grid .is-overdue strong {
+  color: var(--s-cancel);
+}
+.sla-targets {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.sla-targets caption {
+  text-align: left;
+  font-weight: 600;
+  margin-bottom: 8px;
+}
+.sla-targets th,
+.sla-targets td {
+  text-align: left;
+  padding: 9px 10px;
+  border-top: 1px solid var(--border);
+}
+.sla-targets th {
+  color: var(--muted);
+  font-weight: 500;
+}
+@media (max-width: 760px) {
+  .sla-report-grid {
+    grid-template-columns: 1fr;
+  }
+}
+.summary-card.sla-card > div > svg {
+  background: var(--s-cancel-bg);
+  color: var(--s-cancel);
+}

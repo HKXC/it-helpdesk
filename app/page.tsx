@@ -28,6 +28,7 @@ import {
   Filter,
   ShieldCheck,
   Flag,
+  Timer,
   Loader2,
   SlidersHorizontal,
 } from 'lucide-react';
@@ -45,6 +46,8 @@ import { statuses, safeCsvCell, type Job } from '../lib/helpdesk';
 import { TicketForm } from '../components/ticket-form';
 import { TicketDetails, StatusBadge } from '../components/ticket-details';
 import { Onboarding } from '../components/onboarding';
+import { SlaChip } from '../components/sla';
+import { formatDuration, SLA_TARGETS, slaBreached, slaOf } from '../lib/sla';
 import KnowledgeBase from '../components/knowledge-base';
 import UserManagement from '../components/user-management';
 import AccountSettings from '../components/account-settings';
@@ -273,6 +276,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
             (page !== 'mine' || job.assigneeId === user.id) &&
             (state === 'all' ||
               (state === 'active' && isActive(job)) ||
+              (state === 'sla' && slaBreached(job)) ||
               (state === 'waiting' && ['เปิดใหม่', 'รอข้อมูล'].includes(job.status)) ||
               job.status === state) &&
             (category === 'all' || job.category === category) &&
@@ -396,7 +400,16 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
       filter: 'ปิดงาน',
       hint: t('ผู้แจ้งยืนยันผลแล้ว', 'Confirmed by the requester'),
     },
-  ].filter((card) => !staff || !['all', 'ปิดงาน'].includes(card.filter));
+    {
+      label: t('เกิน SLA', 'SLA overdue'),
+      count: jobs.filter(slaBreached).length,
+      icon: Timer,
+      filter: 'sla',
+      hint: t('งานที่เลยเวลาเป้าหมาย', 'Past their target time'),
+    },
+  ].filter((card) =>
+    staff ? !['all', 'ปิดงาน', 'แก้ไขแล้ว'].includes(card.filter) : card.filter !== 'sla',
+  );
   function ticketList() {
     return (
       <>
@@ -460,6 +473,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
                       <Flag size={16} />
                       {priorityLabel(job.priority, locale)}
                     </span>
+                    <SlaChip job={job} />
                   </td>
                   <td>
                     <span className={job.assigneeId ? 'assignee-name' : 'muted'}>
@@ -479,7 +493,10 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
             <button key={job.id} className="mobile-request" onClick={() => S(job.id)}>
               <div>
                 <span className="request-id">IT-{String(job.id).padStart(4, '0')}</span>
-                <StatusBadge value={job.status} />
+                <span className="mobile-request-badges">
+                  <SlaChip job={job} />
+                  <StatusBadge value={job.status} />
+                </span>
               </div>
               <h3>{job.title}</h3>
               <p>
@@ -808,7 +825,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
                   {cardData.map((card, i) => (
                     <button
                       key={card.label}
-                      className="summary-card"
+                      className={'summary-card' + (card.filter === 'sla' ? ' sla-card' : '')}
                       onClick={() => openRequests(card.filter, card.assign)}
                       style={{ animationDelay: i * 35 + 'ms' }}
                     >
@@ -969,6 +986,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
                     >
                       <option value="all">{t('ทุกสถานะ', 'All statuses')}</option>
                       <option value="active">{t('อยู่ระหว่างดำเนินงาน', 'Active work')}</option>
+                      {staff && <option value="sla">{t('เกิน SLA', 'SLA overdue')}</option>}
                       <option value="waiting">
                         {t('รอรับเรื่องหรือข้อมูล', 'New or waiting')}
                       </option>
@@ -1136,6 +1154,72 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
                     </p>
                   </section>
                 </div>
+                {(() => {
+                  const all = jobs.map((j) => slaOf(j)).filter((x) => x !== null);
+                  const rate = (k: 'response' | 'resolve') => {
+                    const done = all.filter((x) => ['met', 'missed'].includes(x[k].state));
+                    const met = done.filter((x) => x[k].state === 'met').length;
+                    return {
+                      pct: done.length ? Math.round((met / done.length) * 100) : null,
+                      met,
+                      total: done.length,
+                    };
+                  };
+                  const r1 = rate('response'),
+                    r2 = rate('resolve'),
+                    overdue = jobs.filter(slaBreached).length;
+                  return (
+                    <section className="panel report-panel sla-report">
+                      <h2>{t('ผลการให้บริการตาม SLA', 'SLA performance')}</h2>
+                      <div className="sla-report-grid">
+                        {[
+                          [t('ตอบกลับทันเวลา', 'Responded on time'), r1],
+                          [t('แก้ไขเสร็จทันเวลา', 'Resolved on time'), r2],
+                        ].map(([title, r]) => {
+                          const v = r as { pct: number | null; met: number; total: number };
+                          return (
+                            <div key={String(title)}>
+                              <span>{String(title)}</span>
+                              <strong>{v.pct === null ? '—' : v.pct + '%'}</strong>
+                              <small>
+                                {v.met}/{v.total} {t('คำร้องที่ครบรอบแล้ว', 'completed requests')}
+                              </small>
+                            </div>
+                          );
+                        })}
+                        <div className={overdue ? 'is-overdue' : ''}>
+                          <span>{t('กำลังเกิน SLA', 'Currently overdue')}</span>
+                          <strong>{overdue}</strong>
+                          <small>{t('คำร้องที่ยังเปิดอยู่', 'open requests')}</small>
+                        </div>
+                      </div>
+                      <table className="sla-targets">
+                        <caption>
+                          {t(
+                            'เป้าหมายเวลา (นับต่อเนื่อง 24 ชม.)',
+                            'Targets (calendar hours, 24/7)',
+                          )}
+                        </caption>
+                        <thead>
+                          <tr>
+                            <th>{t('ความสำคัญ', 'Priority')}</th>
+                            <th>{t('ตอบกลับภายใน', 'Respond within')}</th>
+                            <th>{t('แก้ไขภายใน', 'Resolve within')}</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {Object.entries(SLA_TARGETS).map(([p, v]) => (
+                            <tr key={p}>
+                              <td>{priorityLabel(p, locale)}</td>
+                              <td>{formatDuration(v.response * 3600_000, locale)}</td>
+                              <td>{formatDuration(v.resolve * 3600_000, locale)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </section>
+                  );
+                })()}
                 <section className="panel report-panel category-report">
                   <h2>{t('คำร้องแยกตามหมวดหมู่', 'Requests by category')}</h2>
                   <div className="category-counts">
