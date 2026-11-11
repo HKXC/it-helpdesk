@@ -1,6 +1,7 @@
 'use client';
 import { Languages, Moon, Sun } from 'lucide-react';
 import { useUi } from './ui-provider';
+import { playThemeSwitch } from './theme-bulb';
 export function UiControls() {
   const { locale, dark, t, setLocale, setTheme } = useUi();
   return (
@@ -18,7 +19,10 @@ export function UiControls() {
         type="button"
         className="control-button"
         aria-label={dark ? t('ใช้ธีมสว่าง', 'Use light theme') : t('ใช้ธีมมืด', 'Use dark theme')}
-        onClick={() => setTheme(dark ? 'light' : 'dark')}
+        onClick={(e) => {
+          const next = dark ? 'light' : 'dark';
+          playThemeSwitch(e.currentTarget, next === 'dark', () => setTheme(next));
+        }}
       >
         {dark ? <Sun size={19} /> : <Moon size={19} />}
       </button>

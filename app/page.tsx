@@ -707,7 +707,7 @@ function Dashboard({ user, logout }: { user: WebAccount; logout: () => Promise<v
         </header>
         <main className="main-content" id="main-content">
           {page !== 'knowledge' && (
-            <div className="page-heading">
+            <div className={'page-heading' + (page === 'overview' ? ' is-hero' : '')}>
               <div>
                 <h1>
                   {page === 'overview' ? t('ยินดีต้อนรับ, ', 'Welcome, ') + user.name : pageTitle}
