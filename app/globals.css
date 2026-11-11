@@ -3797,3 +3797,17 @@ textarea:focus {
   display: grid;
   gap: 8px;
 }
+/* Inputs inside icon wrappers: a single focus ring on the wrapper only */
+:is(.input-with-icon, .search):has(> :is(input, select, textarea):focus) {
+  outline: none;
+  border-color: var(--primary);
+  box-shadow: var(--ring);
+}
+:is(.input-with-icon, .search) > :is(input, select, textarea):focus,
+:is(.input-with-icon, .search) > :is(input, select, textarea):focus-visible {
+  box-shadow: none;
+  outline: none;
+}
+.input-with-icon input:-webkit-autofill:focus {
+  box-shadow: 0 0 0 1000px var(--surface) inset;
+}
