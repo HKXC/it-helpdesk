@@ -13,6 +13,7 @@ export function useSlaLabels() {
       ok: t('อยู่ในเวลา', 'On track'),
       warning: t('ใกล้ครบกำหนด', 'Due soon'),
       breached: t('เกินกำหนด', 'Overdue'),
+      paused: t('หยุดนับชั่วคราว', 'Paused'),
       na: t('ไม่นับ', 'N/A'),
     })[state];
 }
@@ -53,9 +54,11 @@ export function SlaPanel({ job }: { job: Job }) {
             ? `${doneText} ${formatDuration(c.delta, locale)}`
             : c.state === 'na'
               ? t('คำร้องถูกยกเลิก', 'Request cancelled')
-              : c.delta >= 0
-                ? `${t('เหลือ', 'left')} ${formatDuration(c.delta, locale)} (${when(c.due)})`
-                : `${t('เกินมา', 'overdue by')} ${formatDuration(c.delta, locale)}`}
+              : c.state === 'paused'
+                ? `${t('รอข้อมูลจากผู้แจ้ง · หยุดไปแล้ว', 'Waiting for requester · paused')} ${formatDuration(c.paused, locale)}`
+                : c.delta >= 0
+                  ? `${t('เหลือ', 'left')} ${formatDuration(c.delta, locale)} (${when(c.due)})`
+                  : `${t('เกินมา', 'overdue by')} ${formatDuration(c.delta, locale)}`}
         </small>
       </div>
       <span className={'sla-chip ' + c.state}>{label(c.state)}</span>

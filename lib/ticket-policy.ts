@@ -18,6 +18,7 @@ export const patchSchema = z
     comments: z.array(z.string().max(2200)).max(300).optional(),
     resolution: z.string().max(3000).optional(),
     rating: z.number().int().min(1).max(5).optional(),
+    priority: z.enum(['ต่ำ', 'ปกติ', 'สูง', 'เร่งด่วน']).optional(),
   })
   .strict();
 export function applyTicketPatch(
@@ -41,6 +42,13 @@ export function applyTicketPatch(
       next.status = 'กำลังดำเนินการ';
       event = 'รับเรื่องและเปลี่ยนสถานะเป็น กำลังดำเนินการ';
     }
+  } else if (keys.length === 1 && patch.priority) {
+    if (!staff) throw new PolicyError('เฉพาะทีม IT หรือ Admin ที่ปรับความสำคัญได้');
+    if (terminal.includes(job.status))
+      throw new PolicyError('คำร้องนี้ปิดแล้ว ปรับความสำคัญไม่ได้', 400);
+    if (patch.priority === job.priority) throw new PolicyError('ความสำคัญเท่าเดิม', 400);
+    next.priority = patch.priority;
+    event = 'ปรับความสำคัญ: ' + job.priority + ' → ' + patch.priority;
   } else if (keys.length === 1 && patch.comments) {
     if (
       patch.comments.length !== job.comments.length + 1 ||

@@ -1,6 +1,7 @@
 // Service level targets per priority, in hours (calendar time, 24/7).
 // Response = first action by IT (assign, status change, reply or resolution).
-// Resolution = ticket marked "แก้ไขแล้ว" (resolved).
+// Resolution = ticket marked "แก้ไขแล้ว" (resolved). The resolution clock pauses while
+// the ticket is "รอข้อมูล" (waiting for the requester) and the deadline moves out by that time.
 import type { Job } from './helpdesk';
 
 export const SLA_TARGETS: Record<string, { response: number; resolve: number }> = {
@@ -10,13 +11,15 @@ export const SLA_TARGETS: Record<string, { response: number; resolve: number }> 
   ต่ำ: { response: 24, resolve: 120 },
 };
 
-export type SlaState = 'met' | 'missed' | 'ok' | 'warning' | 'breached' | 'na';
+export type SlaState = 'met' | 'missed' | 'ok' | 'warning' | 'breached' | 'paused' | 'na';
 export type SlaClock = {
   state: SlaState;
   due: number;
   doneAt: number | null;
   /** ms remaining (negative when overdue); for finished clocks, ms taken. */
   delta: number;
+  /** total ms paused while waiting for the requester */
+  paused: number;
 };
 export type Sla = { response: SlaClock; resolve: SlaClock; overall: SlaState };
 
@@ -50,22 +53,78 @@ function resolvedAt(job: Job) {
   return (ev && time(ev.at)) || time(job.updatedAt);
 }
 
-function clock(start: number, hours: number, doneAt: number | null, open: boolean, now: number) {
-  const due = start + hours * HOUR;
+// Status implied by a history entry, or null if the entry does not change status.
+function statusFromEvent(text: string): string | null {
+  if (text.startsWith('รับเรื่องและเปลี่ยนสถานะเป็น ')) return 'กำลังดำเนินการ';
+  if (text.startsWith('เปลี่ยนสถานะเป็น ')) return text.slice('เปลี่ยนสถานะเป็น '.length).trim();
+  if (text.startsWith('แก้ไขแล้ว')) return 'แก้ไขแล้ว';
+  if (text.startsWith('ยกเลิกคำร้อง')) return 'ยกเลิก';
+  if (text.startsWith('เปิดงานซ้ำ')) return 'เปิดใหม่';
+  if (text.startsWith('ผู้แจ้งยืนยันปิดงาน')) return 'ปิดงาน';
+  return null;
+}
+
+// Total time spent in "รอข้อมูล" up to `until`, and whether it is waiting right now.
+function pausedTime(job: Job, until: number) {
+  let total = 0,
+    since: number | null = null;
+  for (const h of job.history || []) {
+    const next = statusFromEvent(h.text),
+      at = time(h.at);
+    if (!next || at === null) continue;
+    if (next === 'รอข้อมูล' && since === null) since = at;
+    else if (next !== 'รอข้อมูล' && since !== null) {
+      total += Math.max(0, Math.min(at, until) - since);
+      since = null;
+    }
+  }
+  // Seeded/legacy tickets may be waiting without a recorded status change.
+  if (job.status === 'รอข้อมูล' && since === null)
+    since = time(job.history?.at(-1)?.at) ?? time(job.updatedAt);
+  const waiting = job.status === 'รอข้อมูล' && since !== null;
+  if (since !== null && job.status === 'รอข้อมูล') total += Math.max(0, until - since);
+  return { total, waiting };
+}
+
+function clock(
+  start: number,
+  hours: number,
+  doneAt: number | null,
+  open: boolean,
+  now: number,
+  pause = { total: 0, waiting: false },
+): SlaClock {
+  const paused = pause.total;
+  const due = start + hours * HOUR + paused;
   if (doneAt !== null)
     return {
       state: doneAt <= due ? 'met' : 'missed',
       due,
       doneAt,
-      delta: doneAt - start,
-    } as SlaClock;
-  if (!open) return { state: 'na', due, doneAt: null, delta: 0 } as SlaClock;
+      delta: doneAt - start - paused,
+      paused,
+    };
+  if (!open) return { state: 'na', due, doneAt: null, delta: 0, paused };
   const left = due - now;
-  const state: SlaState = left < 0 ? 'breached' : left < hours * HOUR * 0.25 ? 'warning' : 'ok';
-  return { state, due, doneAt: null, delta: left };
+  const state: SlaState = pause.waiting
+    ? 'paused'
+    : left < 0
+      ? 'breached'
+      : left < hours * HOUR * 0.25
+        ? 'warning'
+        : 'ok';
+  return { state, due, doneAt: null, delta: left, paused };
 }
 
-const rank: Record<SlaState, number> = { breached: 5, missed: 4, warning: 3, ok: 2, met: 1, na: 0 };
+const rank: Record<SlaState, number> = {
+  breached: 6,
+  missed: 5,
+  warning: 4,
+  ok: 3,
+  paused: 2,
+  met: 1,
+  na: 0,
+};
 
 export function slaOf(job: Job, now = Date.now()): Sla | null {
   const start = time(job.createdAt);
@@ -75,7 +134,14 @@ export function slaOf(job: Job, now = Date.now()): Sla | null {
   const resolved = resolvedAt(job);
   const responded = firstResponse(job) ?? resolved;
   const response = clock(start, target.response, responded, open, now);
-  const resolve = clock(start, target.resolve, resolved, open, now);
+  const resolve = clock(
+    start,
+    target.resolve,
+    resolved,
+    open,
+    now,
+    pausedTime(job, resolved ?? now),
+  );
   const overall = rank[response.state] >= rank[resolve.state] ? response.state : resolve.state;
   return { response, resolve, overall };
 }

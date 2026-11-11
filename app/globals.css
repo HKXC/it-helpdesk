@@ -3954,3 +3954,13 @@ textarea:focus {
   background: var(--s-cancel-bg);
   color: var(--s-cancel);
 }
+.inline-select {
+  min-height: 36px;
+  padding: 4px 30px 4px 10px;
+  font-size: 15px;
+  max-width: 100%;
+}
+.sla-chip.paused {
+  background: var(--s-new-bg);
+  color: var(--s-new);
+}

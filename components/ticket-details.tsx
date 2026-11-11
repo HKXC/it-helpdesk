@@ -275,7 +275,27 @@ export function TicketDetails({
               </div>
               <div>
                 <dt>{t('ความสำคัญ', 'Priority')}</dt>
-                <dd>{priorityLabel(job.priority, locale)}</dd>
+                <dd>
+                  {staff && !terminal ? (
+                    <select
+                      className="inline-select"
+                      aria-label={t('ปรับความสำคัญ', 'Change priority')}
+                      value={job.priority}
+                      disabled={!canEdit}
+                      onChange={(e) =>
+                        onUpdate(job.id, { priority: e.target.value as Job['priority'] })
+                      }
+                    >
+                      {['ต่ำ', 'ปกติ', 'สูง', 'เร่งด่วน'].map((p) => (
+                        <option key={p} value={p}>
+                          {priorityLabel(p, locale)}
+                        </option>
+                      ))}
+                    </select>
+                  ) : (
+                    priorityLabel(job.priority, locale)
+                  )}
+                </dd>
               </div>
               <div>
                 <dt>{t('สถานที่', 'Location')}</dt>
